@@ -20,4 +20,9 @@ else
     cp Slide15/* Slide14
     cp Slide16/* Slide15
     cp Slide17/* Slide16
+    cp Slide18/* Slide17
+    cp Slide19/* Slide18
+    cp Slide20/* Slide19
+    cp Slide21/* Slide20
+    cp Slide22/* Slide21
 fi
