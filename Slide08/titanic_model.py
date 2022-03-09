@@ -135,11 +135,24 @@ class TitanicModelCreator:
         
         do_pandas_test('../data/df.pkl', df)
         
+
 def main(param: str='pass'):
     titanicModelCreator = TitanicModelCreator(
         loader=SqlLoader(connectionString='sqlite:///../data/titanic.db')
     )
     titanicModelCreator.run()
 
+
+def test_main(param: str='pass'):
+    titanicModelCreator = TitanicModelCreator(
+        loader=TestLoader(
+            passengers_filename='../data/passengers.pkl',
+            targets_filename='../data/targeets.pkl',
+            realLoader=SqlLoader(connectionString='sqlite:///../data/titanic.db')
+        )
+    )
+    titanicModelCreator.run()
+
+
 if __name__ == "__main__":
-    typer.run(main)
+    typer.run(test_main)
