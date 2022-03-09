@@ -138,6 +138,21 @@ class PassengerLoader:
         return passengers
 
 
+class TitanicModel:
+
+    def __init__(self):
+        self.oneHotEncoder = OneHotEncoder(handle_unknown='ignore', sparse=False)
+        self.knnImputer = KNNImputer(n_neighbors=5)
+        self.robustScaler = RobustScaler()
+        self.predictor = LogisticRegression(random_state=0)
+
+    def train(self):
+        pass
+
+    def estimate(self, passengers):
+        return 1
+
+
 class TitanicModelCreator:
 
     def __init__(self, loader):
@@ -151,36 +166,38 @@ class TitanicModelCreator:
         X_train, X_test, y_train, y_test = train_test_split(df, targets, stratify=targets, test_size=0.2)
 
         # --- TRAINING --- 
+        model = TitanicModel()
+
         X_train_categorical = X_train[['embarked', 'sex', 'pclass', 'title', 'is_alone']]
 
-        oneHotEncoder = OneHotEncoder(handle_unknown='ignore', sparse=False).fit(X_train_categorical)
-        X_train_categorical_one_hot = oneHotEncoder.transform(X_train_categorical)
+        model.oneHotEncoder.fit(X_train_categorical)
+        X_train_categorical_one_hot = model.oneHotEncoder.transform(X_train_categorical)
 
         X_train_numerical = X_train[['age', 'fare', 'family_size']]
-        knnImputer = KNNImputer(n_neighbors=5).fit(X_train_numerical)
-        X_train_numerical_imputed = knnImputer.transform(X_train_numerical)
+        model.knnImputer.fit(X_train_numerical)
+        X_train_numerical_imputed = model.knnImputer.transform(X_train_numerical)
 
-        robustScaler = RobustScaler().fit(X_train_numerical_imputed)
-        X_train_numerical_imputed_scaled = robustScaler.transform(X_train_numerical_imputed)
+        model.robustScaler.fit(X_train_numerical_imputed)
+        X_train_numerical_imputed_scaled = model.robustScaler.transform(X_train_numerical_imputed)
 
         X_train_processed = np.hstack((X_train_categorical_one_hot, X_train_numerical_imputed_scaled))
 
-        model = LogisticRegression(random_state=0).fit(X_train_processed, y_train)
-        y_train_estimation = model.predict(X_train_processed)
+        model.predictor.fit(X_train_processed, y_train)
+        y_train_estimation = model.predictor.predict(X_train_processed)
 
         cm_train = confusion_matrix(y_train, y_train_estimation)
 
         # --- TESTING ---
         X_test_categorical = X_test[['embarked', 'sex', 'pclass', 'title', 'is_alone']]
-        X_test_categorical_one_hot = oneHotEncoder.transform(X_test_categorical)
+        X_test_categorical_one_hot = model.oneHotEncoder.transform(X_test_categorical)
 
         X_test_numerical = X_test[['age', 'fare', 'family_size']]
-        X_test_numerical_imputed = knnImputer.transform(X_test_numerical)
-        X_test_numerical_imputed_scaled = robustScaler.transform(X_test_numerical_imputed)
+        X_test_numerical_imputed = model.knnImputer.transform(X_test_numerical)
+        X_test_numerical_imputed_scaled = model.robustScaler.transform(X_test_numerical_imputed)
 
         X_test_processed = np.hstack((X_test_categorical_one_hot, X_test_numerical_imputed_scaled))
 
-        y_test_estimation = model.predict(X_test_processed)
+        y_test_estimation = model.predictor.predict(X_test_processed)
         cm_test = confusion_matrix(y_test, y_test_estimation)
 
         print('cm_train', cm_train)
@@ -191,6 +208,7 @@ class TitanicModelCreator:
         do_test('../data/X_train_processed.pkl', X_train_processed)
         do_test('../data/X_test_processed.pkl', X_test_processed)
         
+        do_pandas_test('../data/X_train.pkl', X_train)
         do_pandas_test('../data/df_no_tickets.pkl', df)
         
 

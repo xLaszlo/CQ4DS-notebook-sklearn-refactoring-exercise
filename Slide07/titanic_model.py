@@ -48,7 +48,28 @@ class SqlLoader:
 
     def get_targets(self):
         query = 'SELECT * FROM tbl_targets'
-        return pd.read_sql(query, con=self.connection)        
+        return pd.read_sql(query, con=self.connection)      
+
+
+class TestLoader:
+
+    def __init__(self, passengers_filename, targets_filename, realLoader):
+        self.passengers_filename = passengers_filename
+        self.targets_filename = targets_filename
+        self.realLoader = realLoader
+        if not os.path.isfile(self.passengers_filename):
+            df = self.realLoader.get_passengers()
+            df.to_pickle(self.passengers_filename)
+        if not os.path.isfile(self.targets_filename):
+            df = self.realLoader.get_targets()
+            df.to_pickle(self.targets_filename)
+
+    def get_passengers(self):
+        return pd.read_pickle(self.passengers_filename)
+
+    def get_targets(self):
+        return pd.read_pickle(self.targets_filename)
+
 
 class TitanicModelCreator:
 
