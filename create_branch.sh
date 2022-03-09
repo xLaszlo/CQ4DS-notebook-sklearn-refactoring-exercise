@@ -12,4 +12,8 @@ else
     cp Slide07/* Slide06
     cp Slide08/* Slide07
     cp Slide09/* Slide08
+    cp Slide10/* Slide09
+    cp Slide11/* Slide10
+    cp Slide12/* Slide11
+    cp Slide13/* Slide12
 fi
