@@ -116,7 +116,9 @@ class TitanicModelCreator:
         
 def main(param: str='pass'):
     titanicModelCreator = TitanicModelCreator(
-        loader=SqlLoader(connectionString='sqlite:///../data/titanic.db')
+        loader=SqlLoader(
+            connectionString='sqlite:///../data/titanic.db'
+        )
     )
     titanicModelCreator.run()
 

@@ -61,7 +61,7 @@ class TestLoader:
             df = self.realLoader.get_passengers()
             df.to_pickle(self.passengers_filename)
         if not os.path.isfile(self.targets_filename):
-            df = self.realLoader.get_passengers()
+            df = self.realLoader.get_targets()
             df.to_pickle(self.targets_filename)
 
     def get_passengers(self):
@@ -137,7 +137,9 @@ class TitanicModelCreator:
         
 def main(param: str='pass'):
     titanicModelCreator = TitanicModelCreator(
-        loader=SqlLoader(connectionString='sqlite:///../data/titanic.db')
+        loader=SqlLoader(
+            connectionString='sqlite:///../data/titanic.db'
+        )
     )
     titanicModelCreator.run()
 
