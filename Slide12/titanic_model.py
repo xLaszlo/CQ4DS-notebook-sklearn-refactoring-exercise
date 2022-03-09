@@ -1,8 +1,5 @@
-from lib2to3.pytree import Base
 import os
 import pickle
-from re import I
-import string
 import typer
 import numpy as np
 import pandas as pd
@@ -187,7 +184,7 @@ class TitanicModelCreator:
         targets = [int(v) for v in df['is_survived']]
         df = df[[
             'pclass', 'sex', 'age', 'ticket', 'family_size',
-            'fare', 'embarked', 'is_alone', 'title', 
+            'fare', 'embarked', 'is_alone', 'title'
         ]]
 
         X_train, X_test, y_train, y_test = train_test_split(df, targets, stratify=targets, test_size=0.2)
