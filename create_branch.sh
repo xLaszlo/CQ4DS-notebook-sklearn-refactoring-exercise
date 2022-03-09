@@ -4,8 +4,12 @@ switch=$1
 if [ -z "$switch" ]; then
     echo "use ./create_branch -do"
 else
-    cp Slide2/* Slide1
-    cp Slide3/* Slide2
-    cp Slide4/* Slide3
-    cp Slide5/* Slide4
+    cp Slide02/* Slide01
+    cp Slide03/* Slide02
+    cp Slide04/* Slide03
+    cp Slide05/* Slide04
+    cp Slide06/* Slide05
+    cp Slide07/* Slide06
+    cp Slide08/* Slide07
+    cp Slide09/* Slide08
 fi
