@@ -141,13 +141,31 @@ class PassengerLoader:
 class TitanicModel:
 
     def __init__(self):
+        self.trained = False
         self.oneHotEncoder = OneHotEncoder(handle_unknown='ignore', sparse=False)
         self.knnImputer = KNNImputer(n_neighbors=5)
         self.robustScaler = RobustScaler()
         self.predictor = LogisticRegression(random_state=0)
 
-    def train(self):
-        pass
+    def process_inputs(self, passengers, pids):
+        passengers_map = {p.pid: p for p in passengers}
+        data = pd.DataFrame([passengers_map[pid].dict() for pid in pids])
+        categorical_data = data[['embarked', 'sex', 'pclass', 'title', 'is_alone']]
+        numerical_data = data[['age', 'fare', 'family_size']]
+        if self.trained:
+            categorical_data = self.oneHotEncoder.transform(categorical_data)
+            numerical_data = self.robustScaler.transform(self.knnImputer.transform(numerical_data))
+        else:
+            categorical_data = self.oneHotEncoder.fit_transform(categorical_data)
+            numerical_data = self.robustScaler.fit_transform(self.knnImputer.fit_transform(numerical_data))
+        return np.hstack((categorical_data, numerical_data))
+
+    def train(self, passengers, pids):
+        passengers_map = {p.pid: p for p in passengers}
+        targets = [passengers_map[pid].is_survived for pid in pids]
+        inputs = self.process_inputs(passengers, pids)     
+        self.predictor.fit(inputs, targets)
+        self.trained = True
 
     def estimate(self, passengers):
         return 1
@@ -169,13 +187,6 @@ class TitanicModelCreator:
         passengers = self.loader.get_passengers()
 
         train_pids, test_pids = self.get_train_pids(passengers)
-        # 
-        # Changing the order of rows changes the result so instead of comprehension we use mapping
-        # 
-        # X_train = pd.DataFrame([v.dict() for v in passengers if v.pid in train_pids])
-        # y_train = [v.is_survived for v in passengers if v.pid in train_pids]
-        # X_test =  pd.DataFrame([v.dict() for v in passengers if v.pid not in train_pids])
-        # y_test = [v.is_survived for v in passengers if v.pid not in train_pids]
 
         passengers_map = {p.pid: p for p in passengers}
         X_train = pd.DataFrame([passengers_map[pid].dict() for pid in train_pids])
@@ -185,23 +196,9 @@ class TitanicModelCreator:
 
         # --- TRAINING --- 
         model = TitanicModel()
+        model.train(passengers, train_pids)
 
-        X_train_categorical = X_train[['embarked', 'sex', 'pclass', 'title', 'is_alone']]
-
-        model.oneHotEncoder.fit(X_train_categorical)
-        X_train_categorical_one_hot = model.oneHotEncoder.transform(X_train_categorical)
-
-        X_train_numerical = X_train[['age', 'fare', 'family_size']]
-        model.knnImputer.fit(X_train_numerical)
-        X_train_numerical_imputed = model.knnImputer.transform(X_train_numerical)
-
-        model.robustScaler.fit(X_train_numerical_imputed)
-        X_train_numerical_imputed_scaled = model.robustScaler.transform(X_train_numerical_imputed)
-
-        X_train_processed = np.hstack((X_train_categorical_one_hot, X_train_numerical_imputed_scaled))
-
-        model.predictor.fit(X_train_processed, y_train)
-
+        X_train_processed = model.process_inputs(passengers, train_pids)
         y_train_estimation = model.predictor.predict(X_train_processed)
 
         cm_train = confusion_matrix(y_train, y_train_estimation)

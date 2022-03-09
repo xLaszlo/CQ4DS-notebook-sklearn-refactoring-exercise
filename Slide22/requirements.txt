@@ -1,0 +1,6 @@
+typer
+sklearn
+jupyter
+pandas
+numpy
+sqlalchemy
