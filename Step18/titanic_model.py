@@ -161,7 +161,11 @@ class TitanicModel:
         return np.hstack((categorical_data, numerical_data))
 
     def train(self, passengers, pids):
-        pass
+        passengers_map = {p.pid: p for p in passengers}
+        targets = [passengers_map[pid].is_survived for pid in pids]
+        inputs = self.process_inputs(passengers, pids)     
+        self.predictor.fit(inputs, targets)
+        self.trained = True
 
     def estimate(self, passengers):
         return 1
@@ -183,13 +187,6 @@ class TitanicModelCreator:
         passengers = self.loader.get_passengers()
 
         train_pids, test_pids = self.get_train_pids(passengers)
-        # 
-        # Changing the order of rows changes the result so instead of comprehension we use mapping
-        # 
-        # X_train = pd.DataFrame([v.dict() for v in passengers if v.pid in train_pids])
-        # y_train = [v.is_survived for v in passengers if v.pid in train_pids]
-        # X_test =  pd.DataFrame([v.dict() for v in passengers if v.pid not in train_pids])
-        # y_test = [v.is_survived for v in passengers if v.pid not in train_pids]
 
         passengers_map = {p.pid: p for p in passengers}
         X_train = pd.DataFrame([passengers_map[pid].dict() for pid in train_pids])
@@ -199,11 +196,9 @@ class TitanicModelCreator:
 
         # --- TRAINING --- 
         model = TitanicModel()
+        model.train(passengers, train_pids)
 
         X_train_processed = model.process_inputs(passengers, train_pids)
-
-        model.predictor.fit(X_train_processed, y_train)
-
         y_train_estimation = model.predictor.predict(X_train_processed)
 
         cm_train = confusion_matrix(y_train, y_train_estimation)

@@ -43,32 +43,31 @@ class SqlLoader:
         self.connection = engine.connect()
 
     def get_passengers(self):
-        query = 'SELECT * FROM tbl_passengers'
+        query = """
+            SELECT 
+                tbl_passengers.*,
+                tbl_targets.is_survived 
+            FROM 
+                tbl_passengers 
+            JOIN 
+                tbl_targets 
+            ON 
+                tbl_passengers.pid=tbl_targets.pid
+        """
         return pd.read_sql(query, con=self.connection)
-
-    def get_targets(self):
-        query = 'SELECT * FROM tbl_targets'
-        return pd.read_sql(query, con=self.connection)      
 
 
 class TestLoader:
 
-    def __init__(self, passengers_filename, targets_filename, realLoader):
+    def __init__(self, passengers_filename, realLoader):
         self.passengers_filename = passengers_filename
-        self.targets_filename = targets_filename
         self.realLoader = realLoader
         if not os.path.isfile(self.passengers_filename):
             df = self.realLoader.get_passengers()
             df.to_pickle(self.passengers_filename)
-        if not os.path.isfile(self.targets_filename):
-            df = self.realLoader.get_targets()
-            df.to_pickle(self.targets_filename)
 
     def get_passengers(self):
         return pd.read_pickle(self.passengers_filename)
-
-    def get_targets(self):
-        return pd.read_pickle(self.targets_filename)
 
 
 class TitanicModelCreator:
@@ -79,7 +78,6 @@ class TitanicModelCreator:
 
     def run(self):
         df = self.loader.get_passengers()
-        targets = self.loader.get_targets()
 
         # parch = Parents/Children, sibsp = Siblings/Spouses
         df['family_size'] = df['parch'] + df['sibsp']
@@ -89,12 +87,12 @@ class TitanicModelCreator:
         rare_titles = {k for k,v in Counter(df['title']).items() if v < 10}
         df['title'] = ['rare' if title in rare_titles else title for title in df['title']]
 
+        targets = [int(v) for v in df['is_survived']]
         df = df[[
             'pclass', 'sex', 'age', 'ticket', 'family_size',
             'fare', 'embarked', 'is_alone', 'title'
         ]]
 
-        targets = [int(v) for v in targets['is_survived']]
         X_train, X_test, y_train, y_test = train_test_split(df, targets, stratify=targets, test_size=0.2)
 
         X_train_categorical = X_train[['embarked', 'sex', 'pclass', 'title', 'is_alone']]
@@ -149,7 +147,6 @@ def test_main(param: str='pass'):
     titanicModelCreator = TitanicModelCreator(
         loader=TestLoader(
             passengers_filename='../data/passengers.pkl',
-            targets_filename='../data/targets.pkl',
             realLoader=SqlLoader(
                 connectionString='sqlite:///../data/titanic.db'
             )
