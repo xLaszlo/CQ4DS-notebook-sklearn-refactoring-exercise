@@ -1,5 +1,4 @@
-
-## Step 20: Refactor model interface
+### Step 20: Refactor model interface
 
 - Remove `pids` from all the interfaces
 - Refactor `run` to pass in only the relevant set of passengers at each point

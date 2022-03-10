@@ -1,5 +1,4 @@
-
-## Step 21: Introduct `train_passengers/test_passengers`
+### Step 21: Introduct `train_passengers/test_passengers`
 
 - Declare `train_passengers/test_passengers` through the `passengers_map`
 - Use the above on all places instead of comprehensions

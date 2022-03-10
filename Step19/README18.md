@@ -1,5 +1,4 @@
-
-## Step 18: Move training into `TitanicModel`
+### Step 18: Move training into `TitanicModel`
 
 - Use the same interface as `process_inputs` with `train()`
 - Process the data with `process_inputs` (just pass through the arguments)

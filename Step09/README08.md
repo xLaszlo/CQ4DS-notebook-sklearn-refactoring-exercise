@@ -1,7 +1,6 @@
+### Step 08: Write the test context
 
-## Step 08: Write the test context
-
-- Create `test_main` function 
+- Create `test_main` function
 - Make sure `typer` calls that in `typer.run()`
 - Copy the code from `main` to `test_main`
 - Replace `SqlLoader` in it with `TestLoader`

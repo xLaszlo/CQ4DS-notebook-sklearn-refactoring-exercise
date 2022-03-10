@@ -1,5 +1,4 @@
-
-## Step 06: Decouple from the database
+### Step 06: Decouple from the database
 
 - Create loader propery and argument in `TitanicModelCreator.__init__()`
 - Remove the database loader instantiation from the `run()` function

@@ -1,5 +1,4 @@
-
-## Step 12: Remove any data that is not explicitly needed
+### Step 12: Remove any data that is not explicitly needed
 
 - Update the query in `SqlLoader` to only retrieve the columns that will be used for the model's input
 

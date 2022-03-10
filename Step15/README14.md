@@ -1,5 +1,4 @@
-
-## Step 14: Separate training and evaluation functions
+### Step 14: Separate training and evaluation functions
 
 - Move all code related to evaluation (variables that has `_test_` in their name) into one group
 

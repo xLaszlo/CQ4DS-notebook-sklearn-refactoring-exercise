@@ -1,5 +1,4 @@
-
-## Step 07: Write testing dataloader
+### Step 07: Write testing dataloader
 
 - Write a class that loads the required data from files
 - Same interface as `SqlLoader`
