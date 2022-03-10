@@ -1,3 +1,4 @@
+
 ## Step 17: Create input processing for `TitanicModel`
 
 - Move code in `run()` from between instantiating `TitanicModel` and training (`model.predictor.fit`) to the `process_inputs` function of `TitanicModel`.

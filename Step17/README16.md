@@ -1,3 +1,4 @@
+
 ## Step 16: Passenger class based training and evaluation sets
 
 - Create a function in `TitanicModelCreator` that splits the `pids` stratified by the "targets" (namely if the passenger survived or not)

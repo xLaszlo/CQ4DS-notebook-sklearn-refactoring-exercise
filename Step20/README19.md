@@ -1,3 +1,4 @@
+
 ## Step 19: Move prediction to `TitanicModel`
 
 - Create the `estimate` function

@@ -1,3 +1,4 @@
+
 ## Step 15: Create `TitanicModel` class
 
 - Create a class that has all the `sklearn` components as member variables
