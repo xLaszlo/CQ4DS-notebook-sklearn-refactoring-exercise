@@ -3,6 +3,7 @@ import pickle
 import typer
 import numpy as np
 import pandas as pd
+from pydantic import BaseModel
 from collections import Counter
 from sqlalchemy import create_engine
 
@@ -12,6 +13,64 @@ from sklearn.preprocessing import RobustScaler
 from sklearn.preprocessing import OneHotEncoder
 from sklearn.impute import KNNImputer
 from sklearn.metrics import confusion_matrix
+
+
+class Passenger(BaseModel):
+    pid: int
+    pclass: int
+    sex: str
+    age: float
+    ticket: str
+    family_size: int
+    fare: float
+    embarked: str
+    is_alone: int
+    title: str
+    is_survived: int
+
+
+# targets = [int(v) for v in df['is_survived']]
+# df = df[[
+#     'pclass', 'sex', 'age', 'ticket', 'family_size',
+#     'fare', 'embarked', 'is_alone', 'title', 
+# ]]
+
+# >>> df[:3].T
+#                                          0                                1                                2
+# pid                                      0                                1                                2
+# pclass                                 1.0                              1.0                              1.0
+# name         Allen, Miss. Elisabeth Walton   Allison, Master. Hudson Trevor     Allison, Miss. Helen Loraine
+# sex                                 female                             male                           female
+# age                                   29.0                           0.9167                              2.0
+# sibsp                                  0.0                              1.0                              1.0
+# parch                                  0.0                              2.0                              2.0
+# ticket                               24160                           113781                           113781
+# fare                              211.3375                           151.55                           151.55
+# cabin                                   B5                          C22 C26                          C22 C26
+# embarked                                 S                                S                                S
+# boat                                     2                               11                             None
+# body                                   NaN                              NaN                              NaN
+# home.dest                     St Louis, MO  Montreal, PQ / Chesterville, ON  Montreal, PQ / Chesterville, ON
+# is_survived                              1                                1                                0
+# >>> df.dtypes
+# pid              int64
+# pclass         float64
+# name            object
+# sex             object
+# age            float64
+# sibsp          float64
+# parch          float64
+# ticket          object
+# fare           float64
+# cabin           object
+# embarked        object
+# boat            object
+# body           float64
+# home.dest       object
+# is_survived      int64
+# >>> set(df['pclass'])
+# {1.0, 2.0, 3.0}
+
 
 
 def do_test(filename, data):
