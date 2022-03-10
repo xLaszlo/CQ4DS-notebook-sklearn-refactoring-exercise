@@ -130,9 +130,40 @@ Because there was no separation of concerns the input processing code was duplic
 - Refactor `run` to pass in only the relevant set of passengers at each point
 
 After finishing the model, it is time to clean the interface and remove those `passengers_maps`. This will be done by moving the filtering of data from the model functions to the caller. We will remove it from there as well in the next step.
-### Step 21: Introduct `train_passengers/test_passengers`
+### Step 21: Introduce `train_passengers/test_passengers`
 
 - Declare `train_passengers/test_passengers` through the `passengers_map`
 - Use the above on all places instead of comprehensions
 
 This is another cleanup step. The concept of "training" and "evaluation" passenger datasets are introduced. This might have been an easier journey if we implement `get_train_passengers` instead of `get_train_pids` but in the course of refactoring this can happen. Currently we have the choice to do this because all dataset related functions are close to each other.
+### Step 22: Save model and move tests to custom model savers
+
+- Create `ModelSaver` that has a `save_model` interface that accepts a model and a result object
+- Pickle the model and the result to a file
+- Create `TestModelSaver` that has the same interface
+- Move the testing code to the `save_model` functon
+- Add `model_saver` property to `TitanicModelCreator` and call it after the evaluation code
+- Add an instance of `ModelSaver` and `TestModelSaver` respectively in `main` and `test_main` to the construction of `TitanicModelCreator`
+
+Currently `TitanicModelCreator` contains its own testing, while this is intended to run in production. It also have no way to save the model. We will introduce the concept of `ModelSaver` here, anything that need to be preserved after the model training need to be passed to this class. 
+
+We will also move testing into a specific `TestModelSaver` that will instead of saving the model, will run the tests that were otherwise be in `run()`. This way the same code can run in production and in testing without change.
+### Step 23: Enable training of different models
+
+- Add `model` property to `TitanicModelCreator` and use in `run()` that instead of the local `TitanicModel` instance.
+- Add `TitanicModel` instantiation to the creation of `TitanicModelCreator` in both `main` and `test_main`
+- Expose parts of `TitanicModel` (predictor, processing parameter)
+
+At this point the refactoring is pretty much finished. This last step enables the creation of different models. Delete test files to recreate ground truth for tests and to enable future changes and refactoring.
+
+Next steps:
+
+- Use different data: 
+    - Update `SqlLoader` to retrieve different data
+    - Update `Passenger` class to contain this new data
+    - Update `PassengerLoader` class to process this new data into the classes
+    - Update `process_inputs` to create features out of this new data
+- Use different features
+    - Update `process_inputs` in `TitanicModel`, expose parameters as needed
+- Use different model:
+    - Use different `predictor` in `TitanicModel`
