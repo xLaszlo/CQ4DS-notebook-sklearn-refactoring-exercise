@@ -167,12 +167,14 @@ class TestModelSaver:
 
 class TitanicModel:
 
-    def __init__(self):
+    def __init__(self, n_neighbors=5, predictor=None):
+        if predictor is None:
+            predictor = LogisticRegression(random_state=0)
         self.trained = False
         self.oneHotEncoder = OneHotEncoder(handle_unknown='ignore', sparse=False)
-        self.knnImputer = KNNImputer(n_neighbors=5)
+        self.knnImputer = KNNImputer(n_neighbors=n_neighbors)
         self.robustScaler = RobustScaler()
-        self.predictor = LogisticRegression(random_state=0)
+        self.predictor = predictor
 
     def process_inputs(self, passengers):
         data = pd.DataFrame([passenger.dict() for passenger in passengers])
@@ -199,8 +201,9 @@ class TitanicModel:
 
 class TitanicModelCreator:
 
-    def __init__(self, loader, model_saver):
+    def __init__(self, loader, model, model_saver):
         self.loader = loader
+        self.model = model
         self.model_saver = model_saver
         np.random.seed(42)
 
@@ -218,20 +221,19 @@ class TitanicModelCreator:
         test_passengers = [passengers_map[pid] for pid in test_pids]
         
         # --- TRAINING --- 
-        model = TitanicModel()
-        model.train(train_passengers)
+        self.model.train(train_passengers)
 
-        y_train_estimation = model.estimate(train_passengers)
+        y_train_estimation = self.model.estimate(train_passengers)
         y_train = [passengers_map[pid].is_survived for pid in train_pids]
         cm_train = confusion_matrix(y_train, y_train_estimation)
 
         # --- TESTING ---
-        y_test_estimation = model.estimate(test_passengers)
+        y_test_estimation = self.model.estimate(test_passengers)
         y_test = [passengers_map[pid].is_survived for pid in test_pids]
         cm_test = confusion_matrix(y_test, y_test_estimation)
 
         self.model_saver.save_model(
-            model=model,
+            model=self.model,
             result={
                 'cm_train': cm_train,
                 'cm_test': cm_test,
@@ -249,6 +251,7 @@ def main(param: str='pass'):
             ),
             rare_titles=RARE_TITLES
         ),
+        model=TitanicModel(),
         model_saver=ModelSaver(
             model_filename='../data/real_model.pkl',
             result_filename='../data/real_result.pkl'
@@ -267,6 +270,10 @@ def test_main(param: str='pass'):
                 )
             ),
             rare_titles=RARE_TITLES
+        ),
+        model=TitanicModel(
+            n_neighbors=5,
+            predictor=LogisticRegression(random_state=0)
         ),
         model_saver=TestModelSaver()
     )

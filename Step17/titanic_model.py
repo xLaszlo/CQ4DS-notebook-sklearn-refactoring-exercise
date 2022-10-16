@@ -141,12 +141,26 @@ class PassengerLoader:
 class TitanicModel:
 
     def __init__(self):
+        self.trained = False
         self.oneHotEncoder = OneHotEncoder(handle_unknown='ignore', sparse=False)
         self.knnImputer = KNNImputer(n_neighbors=5)
         self.robustScaler = RobustScaler()
         self.predictor = LogisticRegression(random_state=0)
 
-    def train(self):
+    def process_inputs(self, passengers, pids):
+        passengers_map = {p.pid: p for p in passengers}
+        data = pd.DataFrame([passengers_map[pid].dict() for pid in pids])
+        categorical_data = data[['embarked', 'sex', 'pclass', 'title', 'is_alone']]
+        numerical_data = data[['age', 'fare', 'family_size']]
+        if self.trained:
+            categorical_data = self.oneHotEncoder.transform(categorical_data)
+            numerical_data = self.robustScaler.transform(self.knnImputer.transform(numerical_data))
+        else:
+            categorical_data = self.oneHotEncoder.fit_transform(categorical_data)
+            numerical_data = self.robustScaler.fit_transform(self.knnImputer.fit_transform(numerical_data))
+        return np.hstack((categorical_data, numerical_data))
+
+    def train(self, passengers, pids):
         pass
 
     def estimate(self, passengers):
@@ -186,19 +200,7 @@ class TitanicModelCreator:
         # --- TRAINING --- 
         model = TitanicModel()
 
-        X_train_categorical = X_train[['embarked', 'sex', 'pclass', 'title', 'is_alone']]
-
-        model.oneHotEncoder.fit(X_train_categorical)
-        X_train_categorical_one_hot = model.oneHotEncoder.transform(X_train_categorical)
-
-        X_train_numerical = X_train[['age', 'fare', 'family_size']]
-        model.knnImputer.fit(X_train_numerical)
-        X_train_numerical_imputed = model.knnImputer.transform(X_train_numerical)
-
-        model.robustScaler.fit(X_train_numerical_imputed)
-        X_train_numerical_imputed_scaled = model.robustScaler.transform(X_train_numerical_imputed)
-
-        X_train_processed = np.hstack((X_train_categorical_one_hot, X_train_numerical_imputed_scaled))
+        X_train_processed = model.process_inputs(passengers, train_pids)
 
         model.predictor.fit(X_train_processed, y_train)
 
