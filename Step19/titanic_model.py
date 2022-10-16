@@ -167,8 +167,9 @@ class TitanicModel:
         self.predictor.fit(inputs, targets)
         self.trained = True
 
-    def estimate(self, passengers):
-        return 1
+    def estimate(self, passengers, pids):
+        inputs = self.process_inputs(passengers, pids)     
+        return self.predictor.predict(inputs)
 
 
 class TitanicModelCreator:
@@ -189,31 +190,17 @@ class TitanicModelCreator:
         train_pids, test_pids = self.get_train_pids(passengers)
 
         passengers_map = {p.pid: p for p in passengers}
-        X_train = pd.DataFrame([passengers_map[pid].dict() for pid in train_pids])
         y_train = [passengers_map[pid].is_survived for pid in train_pids]
-        X_test = pd.DataFrame([passengers_map[pid].dict() for pid in test_pids])
         y_test = [passengers_map[pid].is_survived for pid in test_pids]
 
         # --- TRAINING --- 
         model = TitanicModel()
         model.train(passengers, train_pids)
-
-        X_train_processed = model.process_inputs(passengers, train_pids)
-        y_train_estimation = model.predictor.predict(X_train_processed)
-
+        y_train_estimation = model.estimate(passengers, train_pids)
         cm_train = confusion_matrix(y_train, y_train_estimation)
 
         # --- TESTING ---
-        X_test_categorical = X_test[['embarked', 'sex', 'pclass', 'title', 'is_alone']]
-        X_test_categorical_one_hot = model.oneHotEncoder.transform(X_test_categorical)
-
-        X_test_numerical = X_test[['age', 'fare', 'family_size']]
-        X_test_numerical_imputed = model.knnImputer.transform(X_test_numerical)
-        X_test_numerical_imputed_scaled = model.robustScaler.transform(X_test_numerical_imputed)
-
-        X_test_processed = np.hstack((X_test_categorical_one_hot, X_test_numerical_imputed_scaled))
-
-        y_test_estimation = model.predictor.predict(X_test_processed)
+        y_test_estimation = model.estimate(passengers, test_pids)
         cm_test = confusion_matrix(y_test, y_test_estimation)
 
         print('cm_train', cm_train)
@@ -221,9 +208,12 @@ class TitanicModelCreator:
 
         do_test('../data/cm_test.pkl', cm_test)
         do_test('../data/cm_train.pkl', cm_train)
+        X_train_processed = model.process_inputs(passengers, train_pids)
         do_test('../data/X_train_processed.pkl', X_train_processed)
+        X_test_processed = model.process_inputs(passengers, test_pids)
         do_test('../data/X_test_processed.pkl', X_test_processed)
 
+        X_train = pd.DataFrame([passengers_map[pid].dict() for pid in train_pids])
         do_pandas_test('../data/X_train.pkl', X_train)
         do_pandas_test('../data/df_no_tickets.pkl', pd.DataFrame([v.dict() for v in passengers]))
         

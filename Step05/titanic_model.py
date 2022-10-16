@@ -36,22 +36,30 @@ def do_pandas_test(filename, data):
         print(f'{filename} pandas test failed {ex}')
 
 
+class SqlLoader:
+
+    def __init__(self, connectionString):
+        engine = create_engine(connectionString)
+        self.connection = engine.connect()
+
+    def get_passengers(self):
+        query = 'SELECT * FROM tbl_passengers'
+        return pd.read_sql(query, con=self.connection)
+
+    def get_targets(self):
+        query = 'SELECT * FROM tbl_targets'
+        return pd.read_sql(query, con=self.connection)        
+
 class TitanicModelCreator:
 
     def __init__(self):
-        pass
-
-    def run(self):
-        engine = create_engine('sqlite:///../data/titanic.db')
-        sqlite_connection = engine.connect()
-        pd.read_sql('SELECT * FROM sqlite_schema WHERE type="table"', con=sqlite_connection)
         np.random.seed(42)
 
-        df = pd.read_sql('SELECT * FROM tbl_passengers', con=sqlite_connection)
+    def run(self):
+        loader = SqlLoader(connectionString='sqlite:///../data/titanic.db')
 
-        targets = pd.read_sql('SELECT * FROM tbl_targets', con=sqlite_connection)
-
-        # df, targets = fetch_openml("titanic", version=1, as_frame=True, return_X_y=True)
+        df = loader.get_passengers()
+        targets = loader.get_targets()
 
         # parch = Parents/Children, sibsp = Siblings/Spouses
         df['family_size'] = df['parch'] + df['sibsp']

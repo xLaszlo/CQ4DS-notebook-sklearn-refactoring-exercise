@@ -138,6 +138,33 @@ class PassengerLoader:
         return passengers
 
 
+class ModelSaver:
+
+    def __init__(self, model_filename, result_filename):
+        self.model_filename = model_filename
+        self.result_filename = result_filename
+
+    def save_model(self, model, result):
+        pickle.dump(model, open(self.filename, 'wb'))
+        pickle.dump(result, open(self.result_filename, 'wb'))
+
+
+class TestModelSaver:
+
+    def __init__(self):
+        pass
+
+    def save_model(self, model, result):
+        do_test('../data/cm_test.pkl', result['cm_test'])
+        do_test('../data/cm_train.pkl', result['cm_train'])
+        X_train_processed = model.process_inputs(result['train_passengers'])
+        do_test('../data/X_train_processed.pkl', X_train_processed)
+        X_test_processed = model.process_inputs(result['test_passengers'])
+        do_test('../data/X_test_processed.pkl', X_test_processed)
+        X_train = pd.DataFrame([v.dict() for v in result['train_passengers']])
+        do_pandas_test('../data/X_train.pkl', X_train)
+
+
 class TitanicModel:
 
     def __init__(self):
@@ -172,8 +199,9 @@ class TitanicModel:
 
 class TitanicModelCreator:
 
-    def __init__(self, loader):
+    def __init__(self, loader, model_saver):
         self.loader = loader
+        self.model_saver = model_saver
         np.random.seed(42)
 
     def get_train_pids(self, passengers):
@@ -202,20 +230,16 @@ class TitanicModelCreator:
         y_test = [passengers_map[pid].is_survived for pid in test_pids]
         cm_test = confusion_matrix(y_test, y_test_estimation)
 
-        print('cm_train', cm_train)
-        print('cm_test', cm_test)
+        self.model_saver.save_model(
+            model=model,
+            result={
+                'cm_train': cm_train,
+                'cm_test': cm_test,
+                'train_passengers': train_passengers,
+                'test_passengers': test_passengers
+            }
+        )
 
-        do_test('../data/cm_test.pkl', cm_test)
-        do_test('../data/cm_train.pkl', cm_train)
-        X_train_processed = model.process_inputs(train_passengers)
-        do_test('../data/X_train_processed.pkl', X_train_processed)
-        X_test_processed = model.process_inputs(test_passengers)
-        do_test('../data/X_test_processed.pkl', X_test_processed)
-
-        X_train = pd.DataFrame([v.dict() for v in train_passengers])
-        do_pandas_test('../data/X_train.pkl', X_train)
-        do_pandas_test('../data/df_no_tickets.pkl', pd.DataFrame([v.dict() for v in passengers]))
-        
 
 def main(param: str='pass'):
     titanicModelCreator = TitanicModelCreator(
@@ -224,6 +248,10 @@ def main(param: str='pass'):
                 connectionString='sqlite:///../data/titanic.db'
             ),
             rare_titles=RARE_TITLES
+        ),
+        model_saver=ModelSaver(
+            model_filename='../data/real_model.pkl',
+            result_filename='../data/real_result.pkl'
         )
     )
     titanicModelCreator.run()
@@ -239,7 +267,8 @@ def test_main(param: str='pass'):
                 )
             ),
             rare_titles=RARE_TITLES
-        )
+        ),
+        model_saver=TestModelSaver()
     )
     titanicModelCreator.run()
 

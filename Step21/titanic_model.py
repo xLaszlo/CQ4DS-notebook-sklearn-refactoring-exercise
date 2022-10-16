@@ -186,17 +186,19 @@ class TitanicModelCreator:
         passengers = self.loader.get_passengers()
         passengers_map = {p.pid: p for p in passengers}
         train_pids, test_pids = self.get_train_pids(passengers)
+        train_passengers = [passengers_map[pid] for pid in train_pids]
+        test_passengers = [passengers_map[pid] for pid in test_pids]
         
         # --- TRAINING --- 
         model = TitanicModel()
-        model.train([passengers_map[pid] for pid in train_pids])
+        model.train(train_passengers)
 
-        y_train_estimation = model.estimate([passengers_map[pid] for pid in train_pids])
+        y_train_estimation = model.estimate(train_passengers)
         y_train = [passengers_map[pid].is_survived for pid in train_pids]
         cm_train = confusion_matrix(y_train, y_train_estimation)
 
         # --- TESTING ---
-        y_test_estimation = model.estimate([passengers_map[pid] for pid in test_pids])
+        y_test_estimation = model.estimate(test_passengers)
         y_test = [passengers_map[pid].is_survived for pid in test_pids]
         cm_test = confusion_matrix(y_test, y_test_estimation)
 
@@ -205,12 +207,12 @@ class TitanicModelCreator:
 
         do_test('../data/cm_test.pkl', cm_test)
         do_test('../data/cm_train.pkl', cm_train)
-        X_train_processed = model.process_inputs([passengers_map[pid] for pid in train_pids])
+        X_train_processed = model.process_inputs(train_passengers)
         do_test('../data/X_train_processed.pkl', X_train_processed)
-        X_test_processed = model.process_inputs([passengers_map[pid] for pid in test_pids])
+        X_test_processed = model.process_inputs(test_passengers)
         do_test('../data/X_test_processed.pkl', X_test_processed)
 
-        X_train = pd.DataFrame([passengers_map[pid].dict() for pid in train_pids])
+        X_train = pd.DataFrame([v.dict() for v in train_passengers])
         do_pandas_test('../data/X_train.pkl', X_train)
         do_pandas_test('../data/df_no_tickets.pkl', pd.DataFrame([v.dict() for v in passengers]))
         
