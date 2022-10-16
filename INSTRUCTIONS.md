@@ -2,30 +2,40 @@
 
 - Write script to create virtual environment
 - Write the first `requirements.txt`
+
+You can select a different `setuptools` version or pin the package versions.
 ### Step 02: Code setup
 
 - Write python script stub with `typer`
 - Write shell script to execute the python script
+
+`Typer` is an amazing tool that turns any python script into shell scripts. Here we use it for future-proofing because at the moment there are no CLI arguments.
+
+The program will be defined in a class that is instantiated by the `main()` function and call its main `run()` entry point. The `main()` function will be called by `typer` to pass any CLI parameters. This setup will allow us to create a "plugin" architecture and construct different behaviour (e.g.: normal, test, production) in different main functions. This is a form of "Clean Architecture" where the code (the class) is independent of the infrastructure that calls it (`main()`) more on this: [Clean Architecture: How to structure your ML projects to reduce technical debt (PyData London 2022)](https://laszlo.substack.com/p/slides-for-my-talk-at-pydata-london).
 ### Step 03: Move code out of the notebook
 
 - Copy-paste everything into the `run()` function
+
+First step is to get started. There will be plenty of steps to structure the code better.
 ### Step 04: Move over the tests
 
-- Copy paste tests and testing code into the `run()` function
+- Copy paste tests and testing code from the notebook in `Step00` into the `run()` function.
+
+This will implement very simple end-to-end testing which is less effort than unit testing given that the code is not really in a testable state. It caches the value of some variables and the next time you run the code it will compare it to this cache. If they match you didn't change the behaviour of the code with the last change. If your intentions was indeed to change the behaviour, verify from the output of the `AssertionError` that the changes are working as intended. If they are, delete the chaches and rerun the code to generate new reference values. The tests should be such that if they fail they produce meaningful differences. So instead of aggregate statistics (like an F1 score) test the datasets itself. That way even small changes won't go undetected. Once the code is refactored you can write different type of tests but that's a different story.
 ### Step 05: Decouple from the database
 
 - Write `SQLLoader` class
 - Move database related code into it
 - Replace database calls with interface calls in `run()`
 
-This is a typical example of the Adapter Pattern. Instead of directly calling the DB, we access it through an intermediary preparing for establishing "Loose Coupling" and "Dependency Inversion".
+This is a typical example of the Adapter Pattern. Instead of directly calling the DB, we access it through an intermediary preparing for establishing "Loose Coupling" and "Dependency Inversion". In Clean Architecture the main code (the `run()` function) shouldn't know where the data is coming from, just what the data is. This will bring flexibility because this adapter can be replaced with another one that has the same interface but gets the data from a file. After that you can run your main code without a database which makes it more testable. More on this: [You only need 2 Design Patterns to improve the quality of your code in a data science project](https://laszlo.substack.com/p/you-only-need-2-design-patterns-to).
 ### Step 06: Decouple from the database
 
 - Create loader propery and argument in `TitanicModelCreator.__init__()`
 - Remove the database loader instantiation from the `run()` function
 - Update `TitanicModelCreator` construction to create the loader there
 
-This will enable for the `TitanicModelCreator` to load data from any source for example files. Preparing to build a test context for rapid iteration.
+This will enable for the `TitanicModelCreator` to load data from any source for example files. Preparing to build a test context for rapid iteration. After you created the adapter class, this will do the decoupling. This is an example of "Dependency Injection", when a property of your main code is not written into the main body of the code but instead "plugged in" at constrcution time. The benefit of Dependency Injection is that you can change the behaviour of your code without rewriting it by purely changing its construction. As the saying goes: "Complex behaviour is constructed not written." Dependency Injection Principle is the `D` in the famed `SOLID` principles, and arguably the most important.
 ### Step 07: Write testing dataloader
 
 - Write a class that loads the required data from files
@@ -40,7 +50,9 @@ This will allow the test context to work without DB connection and still have th
 - Copy the code from `main` to `test_main`
 - Replace `SqlLoader` in it with `TestLoader`
 
-From now on this is the only code that is tested. The costly connection to the DB is replaced with a file load. Also if it is still not fast enough, additional parameter can reduce the amount of data in the test to make the process faster.
+From now on this is the only code that is tested. The costly connection to the DB is replaced with a file load. Also if it is still not fast enough, additional parameter can reduce the amount of data in the test to make the process faster. [How can a Data Scientist refactor Jupyter notebooks towards production-quality code?](https://laszlo.substack.com/p/how-can-a-data-scientist-refactor) [I appreciate this might be terse. Comment, open an issue, vote on it if you would like to have a detailed discussion on this - Laszlo]
+
+This is the essence of the importance of Clean Architecture and code reuse. Every code will be used in two different context: test and "production" by injecting different dependencies. Because the same code runs in both places there is no time spent on translating from one to another. The test setup should reflect production context as close as possible so when a test fail or pass you can think that the same will happen in production as well. This speed up iteration because you can freely experiment in the test context and only deploy code into "production" when you are convinced it is doing what you think it should do. But it is the same code, so deployment is effortless.
 ### Step 09: Merge passenger data with targets
 
 - Remove the `get_targets()` interface
@@ -48,6 +60,12 @@ From now on this is the only code that is tested. The costly connection to the D
 - Remove any code related to `targets`
 
 This is a step to prepare to build the "domain data model". The Titanic model is about survival of her passengers. For the code to align this domain the concept of "passengers" need to be introduced (as a class/object). A passenger either survived or not, it's an attribute of the passenger and it need to be implemented like that.
+
+This is a critical part of the code quality journey and building better systems. Once you introduce these concepts your code will depend directly on the business problem you are solving not the various representations the data is stored (pandas, numpy, csv, etc). I wrote about this many times on my blog:
+
+- [3 Ways Domain Data Models help Data Science Projects](https://laszlo.substack.com/p/3-ways-domain-data-models-help-data)
+- [Clean Architecture: How to structure your ML projects to reduce technical debt](https://laszlo.substack.com/p/slides-for-my-talk-at-pydata-london)
+- [How did I change my mind about dataclasses in ML projects?](https://laszlo.substack.com/p/how-did-i-change-my-mind-about-dataclasses)
 ### Step 10: Create Passenger class
 
 - Import `BaseModel` from `pydantic`
@@ -64,6 +82,11 @@ There is really no shortcut here. In a "real" project defining this class would 
 - Copy the data transformations from `TitanicModelCreator.run()`
 
 Take a look at how the `rare_titles` variable is used in `run()`. After scanning the entire dataset for titles, the ones that appear less than 10 times are selected. This can be done only if you have access to the entire database and this list needs to be maintained. This can cause problems in a real setting when the above operation is too difficult to do. For example if you have millions of items or a constant stream. This kind of dependencies are common in legacy code and one of the goals of refactoring is to identify these and make explicit. Here we will use a constant but in a productionised environment this might need a whole separate service.
+
+`PassengerLoader` implements the Factory Design Pattern. Factories are classes that create other classes, they are a type of adapter that hides away where the data is coming from and how is it stored and return only abstract domain relevant classes that you can use downstream. Factories are one of two (later increased to three) fundamentally relevant Design Patterns for Data Science workflows:
+
+- [You only need 2 Design Patterns to improve the quality of your code in a data science project](https://laszlo.substack.com/p/you-only-need-2-design-patterns-to)
+- [Clean Architecture: How to structure your ML projects to reduce technical debt](https://laszlo.substack.com/p/slides-for-my-talk-at-pydata-london)
 ### Step 12: Remove any data that is not explicitly needed
 
 - Update the query in `SqlLoader` to only retrieve the columns that will be used for the model's input
@@ -123,7 +146,7 @@ This is a straightforward step, but it still requires the ugly `passengers_map` 
 
 Because there was no separation of concerns the input processing code was duplicated and now that we moved it to its own location it can be removed.
 
-`X_train_processed` and `X_test_processed` do not exist any more so to pass the tests they need to be recreated before the test is called. This is usually a sign that some other variable need to be tested. Currently the test tests implementation instead of behaviour. From the outside the only thing that matters if the model is creating the same output. The exact internal processed input that is passed to the predictor in the model doesn't.
+`X_train_processed` and `X_test_processed` do not exist any more so to pass the tests they need to be recreated. This is a good point to think about why this is necessary and find a different way to test behaviour. To keep the project short we set aside this but this would be a good place to introduce more tests. 
 ### Step 20: Refactor model interface
 
 - Remove `pids` from all the interfaces
@@ -154,16 +177,16 @@ We will also move testing into a specific `TestModelSaver` that will instead of 
 - Add `TitanicModel` instantiation to the creation of `TitanicModelCreator` in both `main` and `test_main`
 - Expose parts of `TitanicModel` (predictor, processing parameter)
 
-At this point the refactoring is pretty much finished. This last step enables the creation of different models. Delete test files to recreate ground truth for tests and to enable future changes and refactoring.
+At this point the refactoring is pretty much finished. This last step enables the creation of different models. Use existing implementations as templates to create new shell scripts, main functions (contexts) for each experiment that uses new Loaders to create new datasets. Write different test context to make sure the changes you do are as intended.As more experiments emerge, you will see patterns and opportunities to extract common behaviour from similar implementation while still maintaining validity through thes tests. This allows restructuring your code on the fly and find out what is the most convenient architecture for your system. Most problems in these systems are unforeseeable, there is no possibility to figure out the best structure before you start implementation. This require a workflow that enables radical changes even at later stages of the project. Clean Architecture, end-to-end testing and maintaining code quality provides exactly this feature at very low effort.
 
 Next steps:
 
-- Use different data: 
-    - Update `SqlLoader` to retrieve different data
-    - Update `Passenger` class to contain this new data
-    - Update `PassengerLoader` class to process this new data into the classes
-    - Update `process_inputs` to create features out of this new data
+- Use different data:
+  - Update `SqlLoader` to retrieve different data
+  - Update `Passenger` class to contain this new data
+  - Update `PassengerLoader` class to process this new data into the classes
+  - Update `process_inputs` to create features out of this new data
 - Use different features
-    - Update `process_inputs` in `TitanicModel`, expose parameters as needed
+  - Update `process_inputs` in `TitanicModel`, expose parameters as needed
 - Use different model:
-    - Use different `predictor` in `TitanicModel`
+  - Use different `predictor` in `TitanicModel`
