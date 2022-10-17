@@ -2,13 +2,34 @@
 
 This step-by-step programme demonstrates how to refactor a Data Science project from notebooks to well-formed classes and scripts.  
 
+### The project:
+
+The notebook demonstrates a typical setup of a data science project:
+
+- Connects to a database (included in the repository as an SQLite file).
+- Gathers some data (the classic Titanic example).
+- Does feature engineering.
+- Fits a model to estimate survival (sklearn's LogisticRegression).
+- Evaluates the model.
+
+## Refactoring
+
+The programme demonstrates how to improve code quality, increase agility and prepare for unforeseen changes in a real-world project (see `INSTRUCTIONS.md` for reference reading). You will perform the following steps:
+
+- Create end-to-end functional testing
+- Create shell scripts, command line interfaces, virtual environments
+- Decouple from external sources (the Database)
+- Refactor with simple Design Patterns (Adapter/Factory/Strategy)
+- Improve readability
+- Reduce code duplication
+
 ### Howto:
 
-- Clone the repo.
+- Clone the repository.
 - Create a virtual environment with `make_venv.sh`.
 - Follow the instructions in `INSTRUCTIONS.md`.
 - Run the tests with `titanic_model.sh`.
-- Check the diffs of the steps in the pull request to verify your progress.
+- Check the diffs of the pull request's steps to verify your progress.
 
 ### Community:
 
