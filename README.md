@@ -12,7 +12,7 @@ The notebook demonstrates a typical setup of a data science project:
 - Fits a model to estimate survival (sklearn's LogisticRegression).
 - Evaluates the model.
 
-## Refactoring
+### Refactoring
 
 The programme demonstrates how to improve code quality, increase agility and prepare for unforeseen changes in a real-world project (see `INSTRUCTIONS.md` for reference reading). You will perform the following steps:
 
