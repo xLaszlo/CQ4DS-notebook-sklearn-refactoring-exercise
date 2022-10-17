@@ -4,11 +4,11 @@ This step-by-step programme demonstrates how to refactor a Data Science project 
 
 ### Howto:
 
-- Clone the repo
-- Create a virtual environment with `make_venv.sh`
-- Follow the instructions in `INSTRUCTIONS.md` 
-- Run the tests with `titanic_model.sh`
-- Check the pull request to verify progress
+- Clone the repo.
+- Create a virtual environment with `make_venv.sh`.
+- Follow the instructions in `INSTRUCTIONS.md`.
+- Run the tests with `titanic_model.sh`.
+- Check the diffs of the steps in the pull request to verify your progress.
 
 ### Community:
 
