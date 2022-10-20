@@ -12,6 +12,12 @@ The notebook demonstrates a typical setup of a data science project:
 - Fits a model to estimate survival (sklearn's LogisticRegression).
 - Evaluates the model.
 
+### Context, vision, 
+
+I wrote a detailed post on the concepts, strategy and big picture thinking. I recommend reading it parallel with the instructions and the steps in the pull request while you are doing the exercises: 
+
+[https://laszlo.substack.com/p/refactoring-the-titanic](https://laszlo.substack.com/p/refactoring-the-titanic)
+
 ### Refactoring
 
 The programme demonstrates how to improve code quality, increase agility and prepare for unforeseen changes in a real-world project (see `INSTRUCTIONS.md` for reference reading). You will perform the following steps:
