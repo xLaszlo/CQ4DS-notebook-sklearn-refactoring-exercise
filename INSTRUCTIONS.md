@@ -113,30 +113,24 @@ After creating the model first it is trained, then it is evaluated on the traini
 The goal of the whole program is to create a model, despite this until now there was no single object describing this model. The next steps is to establish the concept of this model and what kind of services it is providing for `TitanicModelCreator`.
 ### Step 16: Passenger class based training and evaluation sets
 
-- Create a function in `TitanicModelCreator` that splits the `pids` stratified by the "targets" (namely if the passenger survived or not)
-- Refactor `X_train/X_test` to be created from the list of passengers and the split `pid` lists
+- Create a function in `TitanicModelCreator` that splits the `passengers` stratified by the "targets" (namely if the passenger survived or not)
+- Refactor `X_train/X_test` to be created from these lists of passengers
 
-This is going to be a real mess. High level of entanglement between the functions of the model (train/evaluate) and splitting the data makes refactoring a challenge. The best is to do incremental stepsand sometimes make temporary changes that on their own do not make sense. These will enable to get to a cleaner state and remove them afterwards.
-
-A simple list comprehension can not be used to recreate `X_train/X_test` because `train_test_split` shuffles the rows and the tests would fail. The separate `pid` lists are in the correct order so we create: `passengers_map = {p.pid: p for p in passengers}` and use it as a lookup table to recreate the dataframes. We will remove these at a later step.
+Because `train_test_split` works on lists, we extract the pids and the targets from the classes and create the two sets from a mapping from pids to passenger classes.
 ### Step 17: Create input processing for `TitanicModel`
 
 - Move code in `run()` from between instantiating `TitanicModel` and training (`model.predictor.fit`) to the `process_inputs` function of `TitanicModel`.
 - Introduce `self.trained` boolean
 - Based on `self.trained` either call the `transform` or `fit_transform` of the `sklearn` input processor functions
-- For now pass all the `passengers` and the relevant `pids` to the function and do the `passengers_map` to recreate the dataframe internally.
 
 All the input transformation code happen twice. Once for training data once for evaluation data. While transforming the data is a responsibility of the model. This is a codesmell called "feature envy". `TitanicModelCreator` envies the functionality from `TitanicModel`. There will be several steps to resolve this. The resulting code will create a self contained model that can be shipped independetly from its creator.
 
-The messy bit with the `passengers_map` is an intermediate step and will be resolved later.
 ### Step 18: Move training into `TitanicModel`
 
 - Use the same interface as `process_inputs` with `train()`
 - Process the data with `process_inputs` (just pass through the arguments)
 - Recreate the required targets with the mapping
 - Train the model and set the `trained` boolean to `True`
-
-This is a straightforward step, but it still requires the ugly `passengers_map` thing in `train` as well. We will deal with it separately.
 ### Step 19: Move prediction to `TitanicModel`
 
 - Create the `estimate` function
@@ -146,7 +140,7 @@ This is a straightforward step, but it still requires the ugly `passengers_map` 
 
 Because there was no separation of concerns the input processing code was duplicated and now that we moved it to its own location it can be removed.
 
-`X_train_processed` and `X_test_processed` do not exist any more so to pass the tests they need to be recreated. This is a good point to think about why this is necessary and find a different way to test behaviour. To keep the project short we set aside this but this would be a good place to introduce more tests. 
+`X_train_processed` and `X_test_processed` do not exist any more so to pass the tests they need to be recreated. This is a good point to think about why this is necessary and find a different way to test behaviour. To keep the project short we set aside this but this would be a good place to introduce more tests.
 ### Step 20: Save model and move tests to custom model savers
 
 - Create `ModelSaver` that has a `save_model` interface that accepts a model and a result object
