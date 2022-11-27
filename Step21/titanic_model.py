@@ -128,8 +128,6 @@ class TestModelSaver:
         do_test('../data/X_train_processed.pkl', X_train_processed)
         X_test_processed = model.process_inputs(result['test_passengers'])
         do_test('../data/X_test_processed.pkl', X_test_processed)
-        X_train = pd.DataFrame([v.dict() for v in result['train_passengers']])
-        do_pandas_test('../data/X_train.pkl', X_train)
 
 
 class PassengerLoader:
@@ -161,14 +159,12 @@ class PassengerLoader:
 
 
 class TitanicModel:
-    def __init__(self, n_neighbors=5, predictor=None):
-        if predictor is None:
-            predictor = LogisticRegression(random_state=0)
+    def __init__(self):
         self.trained = False
         self.one_hot_encoder = OneHotEncoder(handle_unknown='ignore', sparse=False)
-        self.knn_imputer = KNNImputer(n_neighbors=n_neighbors)
+        self.knn_imputer = KNNImputer(n_neighbors=5)
         self.robust_scaler = RobustScaler()
-        self.predictor = predictor
+        self.predictor = LogisticRegression(random_state=0)
 
     def process_inputs(self, passengers):
         data = pd.DataFrame([v.dict() for v in passengers])
@@ -198,9 +194,8 @@ class TitanicModel:
 
 
 class TitanicModelCreator:
-    def __init__(self, loader, model, model_saver):
+    def __init__(self, loader, model_saver):
         self.loader = loader
-        self.model = model
         self.model_saver = model_saver
         np.random.seed(42)
 
@@ -218,20 +213,21 @@ class TitanicModelCreator:
         train_passengers, test_passengers = self.split_passengers(passengers)
 
         # --- TRAINING ---
-        self.model.train(train_passengers)
-        y_train_estimation = self.model.estimate(train_passengers)
+        model = TitanicModel()
+        model.train(train_passengers)
+        y_train_estimation = model.estimate(train_passengers)
         cm_train = confusion_matrix(
             [v.is_survived for v in train_passengers], y_train_estimation
         )
 
         # --- TESTING ---
-        y_test_estimation = self.model.estimate(test_passengers)
+        y_test_estimation = model.estimate(test_passengers)
         cm_test = confusion_matrix(
             [v.is_survived for v in test_passengers], y_test_estimation
         )
 
         self.model_saver.save_model(
-            model=self.model,
+            model=model,
             result={
                 'cm_train': cm_train,
                 'cm_test': cm_test,
@@ -247,7 +243,6 @@ def main(param: str = 'pass'):
             loader=SqlLoader(connection_string='sqlite:///../data/titanic.db'),
             rare_titles=RARE_TITLES,
         ),
-        model=TitanicModel(),
         model_saver=ModelSaver(
             model_filename='../data/real_model.pkl',
             result_filename='../data/real_result.pkl',
@@ -260,12 +255,11 @@ def test_main(param: str = 'pass'):
     titanic_model_creator = TitanicModelCreator(
         loader=PassengerLoader(
             loader=TestLoader(
-                passengers_filename='../data/passengers.pkl',
+                passengers_filename='../data/passengers_with_is_survived.pkl',
                 real_loader=SqlLoader(connection_string='sqlite:///../data/titanic.db'),
             ),
             rare_titles=RARE_TITLES,
         ),
-        model=TitanicModel(n_neighbors=5, predictor=LogisticRegression(random_state=0)),
         model_saver=TestModelSaver(),
     )
     titanic_model_creator.run()

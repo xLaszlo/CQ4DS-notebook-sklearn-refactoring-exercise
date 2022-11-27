@@ -223,9 +223,6 @@ class TitanicModelCreator:
         do_test('../data/X_test_processed.pkl', X_test_processed)
 
         do_pandas_test(
-            '../data/X_train.pkl', pd.DataFrame([v.dict() for v in train_passengers])
-        )
-        do_pandas_test(
             '../data/df_no_tickets.pkl', pd.DataFrame([v.dict() for v in passengers])
         )
 
@@ -244,7 +241,7 @@ def test_main(param: str = 'pass'):
     titanic_model_creator = TitanicModelCreator(
         loader=PassengerLoader(
             loader=TestLoader(
-                passengers_filename='../data/passengers.pkl',
+                passengers_filename='../data/passengers_with_is_survived.pkl',
                 real_loader=SqlLoader(connection_string='sqlite:///../data/titanic.db'),
             ),
             rare_titles=RARE_TITLES,

@@ -1,0 +1,19 @@
+rm data/*.pkl
+echo "Step05" && cd Step05 && ./titanic_model.sh && cd ..
+echo "Step06" && cd Step06 && ./titanic_model.sh && cd ..
+echo "Step07" && cd Step07 && ./titanic_model.sh && cd ..
+echo "Step08" && cd Step08 && ./titanic_model.sh && cd ..
+echo "Step09" && cd Step09 && ./titanic_model.sh && cd ..
+echo "Step10" && cd Step10 && ./titanic_model.sh && cd ..
+echo "Step11" && cd Step11 && ./titanic_model.sh && cd ..
+echo "Step12" && cd Step12 && ./titanic_model.sh && cd ..
+echo "Step13" && cd Step13 && ./titanic_model.sh && cd ..
+echo "Step14" && cd Step14 && ./titanic_model.sh && cd ..
+echo "Step15" && cd Step15 && ./titanic_model.sh && cd ..
+echo "Step16" && cd Step16 && ./titanic_model.sh && cd ..
+echo "Step17" && cd Step17 && ./titanic_model.sh && cd ..
+echo "Step18" && cd Step18 && ./titanic_model.sh && cd ..
+echo "Step19" && cd Step19 && ./titanic_model.sh && cd ..
+echo "Step20" && cd Step20 && ./titanic_model.sh && cd ..
+echo "Step21" && cd Step21 && ./titanic_model.sh && cd ..
+echo "Step22" && cd Step22 && ./titanic_model.sh && cd ..
