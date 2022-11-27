@@ -29,7 +29,7 @@ RARE_TITLES = {
     'Ms',
     'Rev',
     'Sir',
-    'the Countess'
+    'the Countess',
 }
 
 
@@ -44,7 +44,7 @@ class Passenger(BaseModel):
     is_alone: int
     title: str
     is_survived: int
-    
+
 
 def do_test(filename, data):
     if not os.path.isfile(filename):
@@ -69,14 +69,13 @@ def do_pandas_test(filename, data):
 
 
 class SqlLoader:
-
     def __init__(self, connectionString):
         engine = create_engine(connectionString)
         self.connection = engine.connect()
 
     def get_passengers(self):
         query = """
-            SELECT 
+            SELECT
                 tbl_passengers.pid,
                 tbl_passengers.pclass,
                 tbl_passengers.sex,
@@ -86,19 +85,18 @@ class SqlLoader:
                 tbl_passengers.fare,
                 tbl_passengers.embarked,
                 tbl_passengers.name,
-                tbl_targets.is_survived 
-            FROM 
-                tbl_passengers 
-            JOIN 
-                tbl_targets 
-            ON 
+                tbl_targets.is_survived
+            FROM
+                tbl_passengers
+            JOIN
+                tbl_targets
+            ON
                 tbl_passengers.pid=tbl_targets.pid
         """
         return pd.read_sql(query, con=self.connection)
 
 
 class TestLoader:
-
     def __init__(self, passengers_filename, realLoader):
         self.passengers_filename = passengers_filename
         self.realLoader = realLoader
@@ -109,8 +107,8 @@ class TestLoader:
     def get_passengers(self):
         return pd.read_pickle(self.passengers_filename)
 
-class PassengerLoader:
 
+class PassengerLoader:
     def __init__(self, loader, rare_titles=None):
         self.loader = loader
         self.rare_titles = rare_titles
@@ -130,16 +128,15 @@ class PassengerLoader:
                 family_size=family_size,
                 fare=float(data.fare),
                 embarked=str(data.embarked),
-                is_alone= 1 if family_size==1 else 0,
+                is_alone=1 if family_size == 1 else 0,
                 title='rare' if title in self.rare_titles else title,
-                is_survived=int(data.is_survived)
+                is_survived=int(data.is_survived),
             )
             passengers.append(passenger)
         return passengers
 
 
 class TitanicModel:
-
     def __init__(self):
         self.oneHotEncoder = OneHotEncoder(handle_unknown='ignore', sparse=False)
         self.knnImputer = KNNImputer(n_neighbors=5)
@@ -154,39 +151,34 @@ class TitanicModel:
 
 
 class TitanicModelCreator:
-
     def __init__(self, loader):
         self.loader = loader
         np.random.seed(42)
 
-    def get_train_pids(self, passengers):
+    def split_passengers(self, passengers):
+        passengers_map = {p.pid: p for p in passengers}
         pids = [passenger.pid for passenger in passengers]
         targets = [passenger.is_survived for passenger in passengers]
         train_pids, test_pids = train_test_split(pids, stratify=targets, test_size=0.2)
-        return train_pids, test_pids
+        train_passengers = [passengers_map[pid] for pid in train_pids]
+        test_passengers = [passengers_map[pid] for pid in test_pids]
+        return train_passengers, test_passengers
 
     def run(self):
         passengers = self.loader.get_passengers()
+        train_passengers, test_passengers = self.split_passengers(passengers)
 
-        train_pids, test_pids = self.get_train_pids(passengers)
-        # 
-        # Changing the order of rows changes the result so instead of comprehension we use mapping
-        # 
-        # X_train = pd.DataFrame([v.dict() for v in passengers if v.pid in train_pids])
-        # y_train = [v.is_survived for v in passengers if v.pid in train_pids]
-        # X_test =  pd.DataFrame([v.dict() for v in passengers if v.pid not in train_pids])
-        # y_test = [v.is_survived for v in passengers if v.pid not in train_pids]
+        X_train = pd.DataFrame([v.dict() for v in train_passengers])
+        y_train = [v.is_survived for v in train_passengers]
+        X_test = pd.DataFrame([v.dict() for v in test_passengers])
+        y_test = [v.is_survived for v in test_passengers]
 
-        passengers_map = {p.pid: p for p in passengers}
-        X_train = pd.DataFrame([passengers_map[pid].dict() for pid in train_pids])
-        y_train = [passengers_map[pid].is_survived for pid in train_pids]
-        X_test = pd.DataFrame([passengers_map[pid].dict() for pid in test_pids])
-        y_test = [passengers_map[pid].is_survived for pid in test_pids]
-
-        # --- TRAINING --- 
+        # --- TRAINING ---
         model = TitanicModel()
 
-        X_train_categorical = X_train[['embarked', 'sex', 'pclass', 'title', 'is_alone']]
+        X_train_categorical = X_train[
+            ['embarked', 'sex', 'pclass', 'title', 'is_alone']
+        ]
 
         model.oneHotEncoder.fit(X_train_categorical)
         X_train_categorical_one_hot = model.oneHotEncoder.transform(X_train_categorical)
@@ -196,12 +188,15 @@ class TitanicModelCreator:
         X_train_numerical_imputed = model.knnImputer.transform(X_train_numerical)
 
         model.robustScaler.fit(X_train_numerical_imputed)
-        X_train_numerical_imputed_scaled = model.robustScaler.transform(X_train_numerical_imputed)
+        X_train_numerical_imputed_scaled = model.robustScaler.transform(
+            X_train_numerical_imputed
+        )
 
-        X_train_processed = np.hstack((X_train_categorical_one_hot, X_train_numerical_imputed_scaled))
+        X_train_processed = np.hstack(
+            (X_train_categorical_one_hot, X_train_numerical_imputed_scaled)
+        )
 
         model.predictor.fit(X_train_processed, y_train)
-
         y_train_estimation = model.predictor.predict(X_train_processed)
 
         cm_train = confusion_matrix(y_train, y_train_estimation)
@@ -212,9 +207,13 @@ class TitanicModelCreator:
 
         X_test_numerical = X_test[['age', 'fare', 'family_size']]
         X_test_numerical_imputed = model.knnImputer.transform(X_test_numerical)
-        X_test_numerical_imputed_scaled = model.robustScaler.transform(X_test_numerical_imputed)
+        X_test_numerical_imputed_scaled = model.robustScaler.transform(
+            X_test_numerical_imputed
+        )
 
-        X_test_processed = np.hstack((X_test_categorical_one_hot, X_test_numerical_imputed_scaled))
+        X_test_processed = np.hstack(
+            (X_test_categorical_one_hot, X_test_numerical_imputed_scaled)
+        )
 
         y_test_estimation = model.predictor.predict(X_test_processed)
         cm_test = confusion_matrix(y_test, y_test_estimation)
@@ -228,31 +227,29 @@ class TitanicModelCreator:
         do_test('../data/X_test_processed.pkl', X_test_processed)
 
         do_pandas_test('../data/X_train.pkl', X_train)
-        do_pandas_test('../data/df_no_tickets.pkl', pd.DataFrame([v.dict() for v in passengers]))
-        
+        do_pandas_test(
+            '../data/df_no_tickets.pkl', pd.DataFrame([v.dict() for v in passengers])
+        )
 
-def main(param: str='pass'):
+
+def main(param: str = 'pass'):
     titanicModelCreator = TitanicModelCreator(
         loader=PassengerLoader(
-            loader=SqlLoader(
-                connectionString='sqlite:///../data/titanic.db'
-            ),
-            rare_titles=RARE_TITLES
+            loader=SqlLoader(connectionString='sqlite:///../data/titanic.db'),
+            rare_titles=RARE_TITLES,
         )
     )
     titanicModelCreator.run()
 
 
-def test_main(param: str='pass'):
+def test_main(param: str = 'pass'):
     titanicModelCreator = TitanicModelCreator(
         loader=PassengerLoader(
             loader=TestLoader(
                 passengers_filename='../data/passengers.pkl',
-                realLoader=SqlLoader(
-                    connectionString='sqlite:///../data/titanic.db'
-                )
+                realLoader=SqlLoader(connectionString='sqlite:///../data/titanic.db'),
             ),
-            rare_titles=RARE_TITLES
+            rare_titles=RARE_TITLES,
         )
     )
     titanicModelCreator.run()

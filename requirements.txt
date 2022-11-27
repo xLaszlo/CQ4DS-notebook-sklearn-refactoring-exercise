@@ -1,7 +1,8 @@
 typer
-sklearn
+scikit-learn
 jupyter
 pandas
 numpy
 sqlalchemy
 pydantic
+

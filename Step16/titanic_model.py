@@ -29,7 +29,7 @@ RARE_TITLES = {
     'Ms',
     'Rev',
     'Sir',
-    'the Countess'
+    'the Countess',
 }
 
 
@@ -44,7 +44,7 @@ class Passenger(BaseModel):
     is_alone: int
     title: str
     is_survived: int
-    
+
 
 def do_test(filename, data):
     if not os.path.isfile(filename):
@@ -69,14 +69,13 @@ def do_pandas_test(filename, data):
 
 
 class SqlLoader:
-
     def __init__(self, connectionString):
         engine = create_engine(connectionString)
         self.connection = engine.connect()
 
     def get_passengers(self):
         query = """
-            SELECT 
+            SELECT
                 tbl_passengers.pid,
                 tbl_passengers.pclass,
                 tbl_passengers.sex,
@@ -86,19 +85,18 @@ class SqlLoader:
                 tbl_passengers.fare,
                 tbl_passengers.embarked,
                 tbl_passengers.name,
-                tbl_targets.is_survived 
-            FROM 
-                tbl_passengers 
-            JOIN 
-                tbl_targets 
-            ON 
+                tbl_targets.is_survived
+            FROM
+                tbl_passengers
+            JOIN
+                tbl_targets
+            ON
                 tbl_passengers.pid=tbl_targets.pid
         """
         return pd.read_sql(query, con=self.connection)
 
 
 class TestLoader:
-
     def __init__(self, passengers_filename, realLoader):
         self.passengers_filename = passengers_filename
         self.realLoader = realLoader
@@ -109,8 +107,8 @@ class TestLoader:
     def get_passengers(self):
         return pd.read_pickle(self.passengers_filename)
 
-class PassengerLoader:
 
+class PassengerLoader:
     def __init__(self, loader, rare_titles=None):
         self.loader = loader
         self.rare_titles = rare_titles
@@ -130,16 +128,15 @@ class PassengerLoader:
                 family_size=family_size,
                 fare=float(data.fare),
                 embarked=str(data.embarked),
-                is_alone= 1 if family_size==1 else 0,
+                is_alone=1 if family_size == 1 else 0,
                 title='rare' if title in self.rare_titles else title,
-                is_survived=int(data.is_survived)
+                is_survived=int(data.is_survived),
             )
             passengers.append(passenger)
         return passengers
 
 
 class TitanicModel:
-
     def __init__(self):
         self.oneHotEncoder = OneHotEncoder(handle_unknown='ignore', sparse=False)
         self.knnImputer = KNNImputer(n_neighbors=5)
@@ -154,7 +151,6 @@ class TitanicModel:
 
 
 class TitanicModelCreator:
-
     def __init__(self, loader):
         self.loader = loader
         np.random.seed(42)
@@ -163,12 +159,16 @@ class TitanicModelCreator:
         df = pd.DataFrame([v.dict() for v in self.loader.get_passengers()])
         targets = [int(v) for v in df['is_survived']]
 
-        X_train, X_test, y_train, y_test = train_test_split(df, targets, stratify=targets, test_size=0.2)
+        X_train, X_test, y_train, y_test = train_test_split(
+            df, targets, stratify=targets, test_size=0.2
+        )
 
-        # --- TRAINING --- 
+        # --- TRAINING ---
         model = TitanicModel()
 
-        X_train_categorical = X_train[['embarked', 'sex', 'pclass', 'title', 'is_alone']]
+        X_train_categorical = X_train[
+            ['embarked', 'sex', 'pclass', 'title', 'is_alone']
+        ]
 
         model.oneHotEncoder.fit(X_train_categorical)
         X_train_categorical_one_hot = model.oneHotEncoder.transform(X_train_categorical)
@@ -178,9 +178,13 @@ class TitanicModelCreator:
         X_train_numerical_imputed = model.knnImputer.transform(X_train_numerical)
 
         model.robustScaler.fit(X_train_numerical_imputed)
-        X_train_numerical_imputed_scaled = model.robustScaler.transform(X_train_numerical_imputed)
+        X_train_numerical_imputed_scaled = model.robustScaler.transform(
+            X_train_numerical_imputed
+        )
 
-        X_train_processed = np.hstack((X_train_categorical_one_hot, X_train_numerical_imputed_scaled))
+        X_train_processed = np.hstack(
+            (X_train_categorical_one_hot, X_train_numerical_imputed_scaled)
+        )
 
         model.predictor.fit(X_train_processed, y_train)
         y_train_estimation = model.predictor.predict(X_train_processed)
@@ -193,9 +197,13 @@ class TitanicModelCreator:
 
         X_test_numerical = X_test[['age', 'fare', 'family_size']]
         X_test_numerical_imputed = model.knnImputer.transform(X_test_numerical)
-        X_test_numerical_imputed_scaled = model.robustScaler.transform(X_test_numerical_imputed)
+        X_test_numerical_imputed_scaled = model.robustScaler.transform(
+            X_test_numerical_imputed
+        )
 
-        X_test_processed = np.hstack((X_test_categorical_one_hot, X_test_numerical_imputed_scaled))
+        X_test_processed = np.hstack(
+            (X_test_categorical_one_hot, X_test_numerical_imputed_scaled)
+        )
 
         y_test_estimation = model.predictor.predict(X_test_processed)
         cm_test = confusion_matrix(y_test, y_test_estimation)
@@ -207,33 +215,29 @@ class TitanicModelCreator:
         do_test('../data/cm_train.pkl', cm_train)
         do_test('../data/X_train_processed.pkl', X_train_processed)
         do_test('../data/X_test_processed.pkl', X_test_processed)
-        
+
         do_pandas_test('../data/X_train.pkl', X_train)
         do_pandas_test('../data/df_no_tickets.pkl', df)
-        
 
-def main(param: str='pass'):
+
+def main(param: str = 'pass'):
     titanicModelCreator = TitanicModelCreator(
         loader=PassengerLoader(
-            loader=SqlLoader(
-                connectionString='sqlite:///../data/titanic.db'
-            ),
-            rare_titles=RARE_TITLES
+            loader=SqlLoader(connectionString='sqlite:///../data/titanic.db'),
+            rare_titles=RARE_TITLES,
         )
     )
     titanicModelCreator.run()
 
 
-def test_main(param: str='pass'):
+def test_main(param: str = 'pass'):
     titanicModelCreator = TitanicModelCreator(
         loader=PassengerLoader(
             loader=TestLoader(
                 passengers_filename='../data/passengers.pkl',
-                realLoader=SqlLoader(
-                    connectionString='sqlite:///../data/titanic.db'
-                )
+                realLoader=SqlLoader(connectionString='sqlite:///../data/titanic.db'),
             ),
-            rare_titles=RARE_TITLES
+            rare_titles=RARE_TITLES,
         )
     )
     titanicModelCreator.run()
