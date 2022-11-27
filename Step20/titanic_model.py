@@ -29,7 +29,7 @@ RARE_TITLES = {
     'Ms',
     'Rev',
     'Sir',
-    'the Countess'
+    'the Countess',
 }
 
 
@@ -69,7 +69,6 @@ def do_pandas_test(filename, data):
 
 
 class SqlLoader:
-
     def __init__(self, connectionString):
         engine = create_engine(connectionString)
         self.connection = engine.connect()
@@ -98,7 +97,6 @@ class SqlLoader:
 
 
 class TestLoader:
-
     def __init__(self, passengers_filename, realLoader):
         self.passengers_filename = passengers_filename
         self.realLoader = realLoader
@@ -111,7 +109,6 @@ class TestLoader:
 
 
 class ModelSaver:
-
     def __init__(self, model_filename, result_filename):
         self.model_filename = model_filename
         self.result_filename = result_filename
@@ -122,7 +119,6 @@ class ModelSaver:
 
 
 class TestModelSaver:
-
     def __init__(self):
         pass
 
@@ -138,7 +134,6 @@ class TestModelSaver:
 
 
 class PassengerLoader:
-
     def __init__(self, loader, rare_titles=None):
         self.loader = loader
         self.rare_titles = rare_titles
@@ -158,16 +153,15 @@ class PassengerLoader:
                 family_size=family_size,
                 fare=float(data.fare),
                 embarked=str(data.embarked),
-                is_alone= 1 if family_size==1 else 0,
+                is_alone=1 if family_size == 1 else 0,
                 title='rare' if title in self.rare_titles else title,
-                is_survived=int(data.is_survived)
+                is_survived=int(data.is_survived),
             )
             passengers.append(passenger)
         return passengers
 
 
 class TitanicModel:
-
     def __init__(self):
         self.trained = False
         self.oneHotEncoder = OneHotEncoder(handle_unknown='ignore', sparse=False)
@@ -181,10 +175,14 @@ class TitanicModel:
         numerical_data = data[['age', 'fare', 'family_size']]
         if self.trained:
             categorical_data = self.oneHotEncoder.transform(categorical_data)
-            numerical_data = self.robustScaler.transform(self.knnImputer.transform(numerical_data))
+            numerical_data = self.robustScaler.transform(
+                self.knnImputer.transform(numerical_data)
+            )
         else:
             categorical_data = self.oneHotEncoder.fit_transform(categorical_data)
-            numerical_data = self.robustScaler.fit_transform(self.knnImputer.fit_transform(numerical_data))
+            numerical_data = self.robustScaler.fit_transform(
+                self.knnImputer.fit_transform(numerical_data)
+            )
         return np.hstack((categorical_data, numerical_data))
 
     def train(self, passengers):
@@ -199,7 +197,6 @@ class TitanicModel:
 
 
 class TitanicModelCreator:
-
     def __init__(self, loader, model_saver):
         self.loader = loader
         self.model_saver = model_saver
@@ -222,11 +219,15 @@ class TitanicModelCreator:
         model = TitanicModel()
         model.train(train_passengers)
         y_train_estimation = model.estimate(train_passengers)
-        cm_train = confusion_matrix([v.is_survived for v in train_passengers], y_train_estimation)
+        cm_train = confusion_matrix(
+            [v.is_survived for v in train_passengers], y_train_estimation
+        )
 
         # --- TESTING ---
         y_test_estimation = model.estimate(test_passengers)
-        cm_test = confusion_matrix([v.is_survived for v in test_passengers], y_test_estimation)
+        cm_test = confusion_matrix(
+            [v.is_survived for v in test_passengers], y_test_estimation
+        )
 
         self.model_saver.save_model(
             model=model,
@@ -234,39 +235,35 @@ class TitanicModelCreator:
                 'cm_train': cm_train,
                 'cm_test': cm_test,
                 'train_passengers': train_passengers,
-                'test_passengers': test_passengers
-            }
+                'test_passengers': test_passengers,
+            },
         )
 
 
-def main(param: str='pass'):
+def main(param: str = 'pass'):
     titanicModelCreator = TitanicModelCreator(
         loader=PassengerLoader(
-            loader=SqlLoader(
-                connectionString='sqlite:///../data/titanic.db'
-            ),
-            rare_titles=RARE_TITLES
+            loader=SqlLoader(connectionString='sqlite:///../data/titanic.db'),
+            rare_titles=RARE_TITLES,
         ),
         model_saver=ModelSaver(
             model_filename='../data/real_model.pkl',
-            result_filename='../data/real_result.pkl'
-        )
+            result_filename='../data/real_result.pkl',
+        ),
     )
     titanicModelCreator.run()
 
 
-def test_main(param: str='pass'):
+def test_main(param: str = 'pass'):
     titanicModelCreator = TitanicModelCreator(
         loader=PassengerLoader(
             loader=TestLoader(
                 passengers_filename='../data/passengers.pkl',
-                realLoader=SqlLoader(
-                    connectionString='sqlite:///../data/titanic.db'
-                )
+                realLoader=SqlLoader(connectionString='sqlite:///../data/titanic.db'),
             ),
-            rare_titles=RARE_TITLES
+            rare_titles=RARE_TITLES,
         ),
-        model_saver=TestModelSaver()
+        model_saver=TestModelSaver(),
     )
     titanicModelCreator.run()
 
