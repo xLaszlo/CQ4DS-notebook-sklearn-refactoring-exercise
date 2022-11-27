@@ -44,7 +44,7 @@ class Passenger(BaseModel):
     is_alone: int
     title: str
     is_survived: int
-    
+
 
 def do_test(filename, data):
     if not os.path.isfile(filename):
@@ -76,7 +76,7 @@ class SqlLoader:
 
     def get_passengers(self):
         query = """
-            SELECT 
+            SELECT
                 tbl_passengers.pid,
                 tbl_passengers.pclass,
                 tbl_passengers.sex,
@@ -86,12 +86,12 @@ class SqlLoader:
                 tbl_passengers.fare,
                 tbl_passengers.embarked,
                 tbl_passengers.name,
-                tbl_targets.is_survived 
-            FROM 
-                tbl_passengers 
-            JOIN 
-                tbl_targets 
-            ON 
+                tbl_targets.is_survived
+            FROM
+                tbl_passengers
+            JOIN
+                tbl_targets
+            ON
                 tbl_passengers.pid=tbl_targets.pid
         """
         return pd.read_sql(query, con=self.connection)
@@ -108,6 +108,34 @@ class TestLoader:
 
     def get_passengers(self):
         return pd.read_pickle(self.passengers_filename)
+
+
+class ModelSaver:
+
+    def __init__(self, model_filename, result_filename):
+        self.model_filename = model_filename
+        self.result_filename = result_filename
+
+    def save_model(self, model, result):
+        pickle.dump(model, open(self.filename, 'wb'))
+        pickle.dump(result, open(self.result_filename, 'wb'))
+
+
+class TestModelSaver:
+
+    def __init__(self):
+        pass
+
+    def save_model(self, model, result):
+        do_test('../data/cm_test.pkl', result['cm_test'])
+        do_test('../data/cm_train.pkl', result['cm_train'])
+        X_train_processed = model.process_inputs(result['train_passengers'])
+        do_test('../data/X_train_processed.pkl', X_train_processed)
+        X_test_processed = model.process_inputs(result['test_passengers'])
+        do_test('../data/X_test_processed.pkl', X_test_processed)
+        X_train = pd.DataFrame([v.dict() for v in result['train_passengers']])
+        do_pandas_test('../data/X_train.pkl', X_train)
+
 
 class PassengerLoader:
 
@@ -140,15 +168,17 @@ class PassengerLoader:
 
 class TitanicModel:
 
-    def __init__(self):
+    def __init__(self, n_neighbors=5, predictor=None):
+        if predictor is None:
+            predictor = LogisticRegression(random_state=0)
         self.trained = False
         self.oneHotEncoder = OneHotEncoder(handle_unknown='ignore', sparse=False)
-        self.knnImputer = KNNImputer(n_neighbors=5)
+        self.knnImputer = KNNImputer(n_neighbors=n_neighbors)
         self.robustScaler = RobustScaler()
-        self.predictor = LogisticRegression(random_state=0)
+        self.predictor = predictor
 
     def process_inputs(self, passengers):
-        data = pd.DataFrame([passenger.dict() for passenger in passengers])
+        data = pd.DataFrame([v.dict() for v in passengers])
         categorical_data = data[['embarked', 'sex', 'pclass', 'title', 'is_alone']]
         numerical_data = data[['age', 'fare', 'family_size']]
         if self.trained:
@@ -160,62 +190,56 @@ class TitanicModel:
         return np.hstack((categorical_data, numerical_data))
 
     def train(self, passengers):
-        targets = [passenger.is_survived for passenger in passengers]
-        inputs = self.process_inputs(passengers)     
+        targets = [v.is_survived for v in passengers]
+        inputs = self.process_inputs(passengers)
         self.predictor.fit(inputs, targets)
         self.trained = True
 
     def estimate(self, passengers):
-        inputs = self.process_inputs(passengers)     
+        inputs = self.process_inputs(passengers)
         return self.predictor.predict(inputs)
 
 
 class TitanicModelCreator:
 
-    def __init__(self, loader):
+    def __init__(self, loader, model, model_saver):
         self.loader = loader
+        self.model = model
+        self.model_saver = model_saver
         np.random.seed(42)
 
-    def get_train_pids(self, passengers):
+    def split_passengers(self, passengers):
+        passengers_map = {p.pid: p for p in passengers}
         pids = [passenger.pid for passenger in passengers]
         targets = [passenger.is_survived for passenger in passengers]
         train_pids, test_pids = train_test_split(pids, stratify=targets, test_size=0.2)
-        return train_pids, test_pids
+        train_passengers = [passengers_map[pid] for pid in train_pids]
+        test_passengers = [passengers_map[pid] for pid in test_pids]
+        return train_passengers, test_passengers
 
     def run(self):
         passengers = self.loader.get_passengers()
-        passengers_map = {p.pid: p for p in passengers}
-        train_pids, test_pids = self.get_train_pids(passengers)
-        train_passengers = [passengers_map[pid] for pid in train_pids]
-        test_passengers = [passengers_map[pid] for pid in test_pids]
-        
-        # --- TRAINING --- 
-        model = TitanicModel()
-        model.train(train_passengers)
+        train_passengers, test_passengers = self.split_passengers(passengers)
 
-        y_train_estimation = model.estimate(train_passengers)
-        y_train = [passengers_map[pid].is_survived for pid in train_pids]
-        cm_train = confusion_matrix(y_train, y_train_estimation)
+        # --- TRAINING ---
+        self.model.train(train_passengers)
+        y_train_estimation = self.model.estimate(train_passengers)
+        cm_train = confusion_matrix([v.is_survived for v in train_passengers], y_train_estimation)
 
         # --- TESTING ---
-        y_test_estimation = model.estimate(test_passengers)
-        y_test = [passengers_map[pid].is_survived for pid in test_pids]
-        cm_test = confusion_matrix(y_test, y_test_estimation)
+        y_test_estimation = self.model.estimate(test_passengers)
+        cm_test = confusion_matrix([v.is_survived for v in test_passengers], y_test_estimation)
 
-        print('cm_train', cm_train)
-        print('cm_test', cm_test)
+        self.model_saver.save_model(
+            model=self.model,
+            result={
+                'cm_train': cm_train,
+                'cm_test': cm_test,
+                'train_passengers': train_passengers,
+                'test_passengers': test_passengers
+            }
+        )
 
-        do_test('../data/cm_test.pkl', cm_test)
-        do_test('../data/cm_train.pkl', cm_train)
-        X_train_processed = model.process_inputs(train_passengers)
-        do_test('../data/X_train_processed.pkl', X_train_processed)
-        X_test_processed = model.process_inputs(test_passengers)
-        do_test('../data/X_test_processed.pkl', X_test_processed)
-
-        X_train = pd.DataFrame([v.dict() for v in train_passengers])
-        do_pandas_test('../data/X_train.pkl', X_train)
-        do_pandas_test('../data/df_no_tickets.pkl', pd.DataFrame([v.dict() for v in passengers]))
-        
 
 def main(param: str='pass'):
     titanicModelCreator = TitanicModelCreator(
@@ -224,6 +248,11 @@ def main(param: str='pass'):
                 connectionString='sqlite:///../data/titanic.db'
             ),
             rare_titles=RARE_TITLES
+        ),
+        model=TitanicModel(),
+        model_saver=ModelSaver(
+            model_filename='../data/real_model.pkl',
+            result_filename='../data/real_result.pkl'
         )
     )
     titanicModelCreator.run()
@@ -239,7 +268,12 @@ def test_main(param: str='pass'):
                 )
             ),
             rare_titles=RARE_TITLES
-        )
+        ),
+        model=TitanicModel(
+            n_neighbors=5,
+            predictor=LogisticRegression(random_state=0)
+        ),
+        model_saver=TestModelSaver()
     )
     titanicModelCreator.run()
 
