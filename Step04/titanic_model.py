@@ -1,3 +1,5 @@
+import os
+import pickle
 import typer
 import numpy as np
 import pandas as pd
@@ -10,6 +12,28 @@ from sklearn.preprocessing import RobustScaler
 from sklearn.preprocessing import OneHotEncoder
 from sklearn.impute import KNNImputer
 from sklearn.metrics import confusion_matrix
+
+
+def do_test(filename, data):
+    if not os.path.isfile(filename):
+        pickle.dump(data, open(filename, 'wb'))
+    truth = pickle.load(open(filename, 'rb'))
+    try:
+        np.testing.assert_almost_equal(data, truth)
+        print(f'{filename} test passed')
+    except AssertionError as ex:
+        print(f'{filename} test failed {ex}')
+
+
+def do_pandas_test(filename, data):
+    if not os.path.isfile(filename):
+        data.to_pickle(filename)
+    truth = pd.read_pickle(filename)
+    try:
+        pd.testing.assert_frame_equal(data, truth)
+        print(f'{filename} pandas test passed')
+    except AssertionError as ex:
+        print(f'{filename} pandas test failed {ex}')
 
 
 class TitanicModelCreator:
@@ -103,6 +127,13 @@ class TitanicModelCreator:
 
         print('cm_train', cm_train)
         print('cm_test', cm_test)
+
+        do_test('../data/cm_test.pkl', cm_test)
+        do_test('../data/cm_train.pkl', cm_train)
+        do_test('../data/X_train_processed.pkl', X_train_processed)
+        do_test('../data/X_test_processed.pkl', X_test_processed)
+
+        do_pandas_test('../data/df.pkl', df)
 
 
 def main(param: str = 'pass'):

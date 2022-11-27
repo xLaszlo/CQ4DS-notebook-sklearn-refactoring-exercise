@@ -167,5 +167,16 @@ def main(param: str = 'pass'):
     titanic_model_creator.run()
 
 
+def test_main(param: str = 'pass'):
+    titanic_model_creator = TitanicModelCreator(
+        loader=TestLoader(
+            passengers_filename='../data/passengers.pkl',
+            targets_filename='../data/targets.pkl',
+            real_loader=SqlLoader(connection_string='sqlite:///../data/titanic.db'),
+        )
+    )
+    titanic_model_creator.run()
+
+
 if __name__ == "__main__":
-    typer.run(main)
+    typer.run(test_main)

@@ -137,10 +137,27 @@ class PassengerLoader:
 
 class TitanicModel:
     def __init__(self):
+        self.trained = False
         self.one_hot_encoder = OneHotEncoder(handle_unknown='ignore', sparse=False)
         self.knn_imputer = KNNImputer(n_neighbors=5)
         self.robust_scaler = RobustScaler()
         self.predictor = LogisticRegression(random_state=0)
+
+    def process_inputs(self, passengers):
+        data = pd.DataFrame([v.dict() for v in passengers])
+        categorical_data = data[['embarked', 'sex', 'pclass', 'title', 'is_alone']]
+        numerical_data = data[['age', 'fare', 'family_size']]
+        if self.trained:
+            categorical_data = self.one_hot_encoder.transform(categorical_data)
+            numerical_data = self.robust_scaler.transform(
+                self.knn_imputer.transform(numerical_data)
+            )
+        else:
+            categorical_data = self.one_hot_encoder.fit_transform(categorical_data)
+            numerical_data = self.robust_scaler.fit_transform(
+                self.knn_imputer.fit_transform(numerical_data)
+            )
+        return np.hstack((categorical_data, numerical_data))
 
     def train(self):
         pass
@@ -167,7 +184,6 @@ class TitanicModelCreator:
         passengers = self.loader.get_passengers()
         train_passengers, test_passengers = self.split_passengers(passengers)
 
-        X_train = pd.DataFrame([v.dict() for v in train_passengers])
         y_train = [v.is_survived for v in train_passengers]
         X_test = pd.DataFrame([v.dict() for v in test_passengers])
         y_test = [v.is_survived for v in test_passengers]
@@ -175,26 +191,7 @@ class TitanicModelCreator:
         # --- TRAINING ---
         model = TitanicModel()
 
-        X_train_categorical = X_train[
-            ['embarked', 'sex', 'pclass', 'title', 'is_alone']
-        ]
-
-        model.one_hot_encoder.fit(X_train_categorical)
-        X_train_categorical_one_hot = model.one_hot_encoder.transform(X_train_categorical)
-
-        X_train_numerical = X_train[['age', 'fare', 'family_size']]
-        model.knn_imputer.fit(X_train_numerical)
-        X_train_numerical_imputed = model.knn_imputer.transform(X_train_numerical)
-
-        model.robust_scaler.fit(X_train_numerical_imputed)
-        X_train_numerical_imputed_scaled = model.robust_scaler.transform(
-            X_train_numerical_imputed
-        )
-
-        X_train_processed = np.hstack(
-            (X_train_categorical_one_hot, X_train_numerical_imputed_scaled)
-        )
-
+        X_train_processed = model.process_inputs(train_passengers)
         model.predictor.fit(X_train_processed, y_train)
         y_train_estimation = model.predictor.predict(X_train_processed)
 
@@ -225,7 +222,9 @@ class TitanicModelCreator:
         do_test('../data/X_train_processed.pkl', X_train_processed)
         do_test('../data/X_test_processed.pkl', X_test_processed)
 
-        do_pandas_test('../data/X_train.pkl', X_train)
+        do_pandas_test(
+            '../data/X_train.pkl', pd.DataFrame([v.dict() for v in train_passengers])
+        )
         do_pandas_test(
             '../data/df_no_tickets.pkl', pd.DataFrame([v.dict() for v in passengers])
         )

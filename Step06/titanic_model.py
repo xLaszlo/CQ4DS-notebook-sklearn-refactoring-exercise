@@ -51,14 +51,13 @@ class SqlLoader:
 
 
 class TitanicModelCreator:
-    def __init__(self):
+    def __init__(self, loader):
+        self.loader = loader
         np.random.seed(42)
 
     def run(self):
-        loader = SqlLoader(connection_string='sqlite:///../data/titanic.db')
-
-        df = loader.get_passengers()
-        targets = loader.get_targets()
+        df = self.loader.get_passengers()
+        targets = self.loader.get_targets()
 
         # parch = Parents/Children, sibsp = Siblings/Spouses
         df['family_size'] = df['parch'] + df['sibsp']
@@ -143,7 +142,9 @@ class TitanicModelCreator:
 
 
 def main(param: str = 'pass'):
-    titanic_model_creator = TitanicModelCreator()
+    titanic_model_creator = TitanicModelCreator(
+        loader=SqlLoader(connection_string='sqlite:///../data/titanic.db')
+    )
     titanic_model_creator.run()
 
 

@@ -154,13 +154,23 @@ class TitanicModelCreator:
         self.loader = loader
         np.random.seed(42)
 
-    def run(self):
-        df = pd.DataFrame([v.dict() for v in self.loader.get_passengers()])
-        targets = [int(v) for v in df['is_survived']]
+    def split_passengers(self, passengers):
+        passengers_map = {p.pid: p for p in passengers}
+        pids = [passenger.pid for passenger in passengers]
+        targets = [passenger.is_survived for passenger in passengers]
+        train_pids, test_pids = train_test_split(pids, stratify=targets, test_size=0.2)
+        train_passengers = [passengers_map[pid] for pid in train_pids]
+        test_passengers = [passengers_map[pid] for pid in test_pids]
+        return train_passengers, test_passengers
 
-        X_train, X_test, y_train, y_test = train_test_split(
-            df, targets, stratify=targets, test_size=0.2
-        )
+    def run(self):
+        passengers = self.loader.get_passengers()
+        train_passengers, test_passengers = self.split_passengers(passengers)
+
+        X_train = pd.DataFrame([v.dict() for v in train_passengers])
+        y_train = [v.is_survived for v in train_passengers]
+        X_test = pd.DataFrame([v.dict() for v in test_passengers])
+        y_test = [v.is_survived for v in test_passengers]
 
         # --- TRAINING ---
         model = TitanicModel()
@@ -216,7 +226,9 @@ class TitanicModelCreator:
         do_test('../data/X_test_processed.pkl', X_test_processed)
 
         do_pandas_test('../data/X_train.pkl', X_train)
-        do_pandas_test('../data/df_no_tickets.pkl', df)
+        do_pandas_test(
+            '../data/df_no_tickets.pkl', pd.DataFrame([v.dict() for v in passengers])
+        )
 
 
 def main(param: str = 'pass'):

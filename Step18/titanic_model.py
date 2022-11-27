@@ -159,11 +159,15 @@ class TitanicModel:
             )
         return np.hstack((categorical_data, numerical_data))
 
-    def train(self):
-        pass
+    def train(self, passengers):
+        targets = [v.is_survived for v in passengers]
+        inputs = self.process_inputs(passengers)
+        self.predictor.fit(inputs, targets)
+        self.trained = True
 
     def estimate(self, passengers):
-        return 1
+        inputs = self.process_inputs(passengers)
+        return self.predictor.predict(inputs)
 
 
 class TitanicModelCreator:
@@ -184,42 +188,28 @@ class TitanicModelCreator:
         passengers = self.loader.get_passengers()
         train_passengers, test_passengers = self.split_passengers(passengers)
 
-        y_train = [v.is_survived for v in train_passengers]
-        X_test = pd.DataFrame([v.dict() for v in test_passengers])
-        y_test = [v.is_survived for v in test_passengers]
-
         # --- TRAINING ---
         model = TitanicModel()
-
-        X_train_processed = model.process_inputs(train_passengers)
-        model.predictor.fit(X_train_processed, y_train)
-        y_train_estimation = model.predictor.predict(X_train_processed)
-
-        cm_train = confusion_matrix(y_train, y_train_estimation)
+        model.train(train_passengers)
+        y_train_estimation = model.estimate(train_passengers)
+        cm_train = confusion_matrix(
+            [v.is_survived for v in train_passengers], y_train_estimation
+        )
 
         # --- TESTING ---
-        X_test_categorical = X_test[['embarked', 'sex', 'pclass', 'title', 'is_alone']]
-        X_test_categorical_one_hot = model.one_hot_encoder.transform(X_test_categorical)
-
-        X_test_numerical = X_test[['age', 'fare', 'family_size']]
-        X_test_numerical_imputed = model.knn_imputer.transform(X_test_numerical)
-        X_test_numerical_imputed_scaled = model.robust_scaler.transform(
-            X_test_numerical_imputed
+        y_test_estimation = model.estimate(test_passengers)
+        cm_test = confusion_matrix(
+            [v.is_survived for v in test_passengers], y_test_estimation
         )
-
-        X_test_processed = np.hstack(
-            (X_test_categorical_one_hot, X_test_numerical_imputed_scaled)
-        )
-
-        y_test_estimation = model.predictor.predict(X_test_processed)
-        cm_test = confusion_matrix(y_test, y_test_estimation)
 
         print('cm_train', cm_train)
         print('cm_test', cm_test)
 
         do_test('../data/cm_test.pkl', cm_test)
         do_test('../data/cm_train.pkl', cm_train)
+        X_train_processed = model.process_inputs(train_passengers)
         do_test('../data/X_train_processed.pkl', X_train_processed)
+        X_test_processed = model.process_inputs(test_passengers)
         do_test('../data/X_test_processed.pkl', X_test_processed)
 
         do_pandas_test(
