@@ -37,8 +37,8 @@ def do_pandas_test(filename, data):
 
 
 class SqlLoader:
-    def __init__(self, connectionString):
-        engine = create_engine(connectionString)
+    def __init__(self, connection_string):
+        engine = create_engine(connection_string)
         self.connection = engine.connect()
 
     def get_passengers(self):
@@ -55,7 +55,7 @@ class TitanicModelCreator:
         np.random.seed(42)
 
     def run(self):
-        loader = SqlLoader(connectionString='sqlite:///../data/titanic.db')
+        loader = SqlLoader(connection_string='sqlite:///../data/titanic.db')
 
         df = loader.get_passengers()
         targets = loader.get_targets()
@@ -96,23 +96,23 @@ class TitanicModelCreator:
         ]
         X_test_categorical = X_test[['embarked', 'sex', 'pclass', 'title', 'is_alone']]
 
-        oneHotEncoder = OneHotEncoder(handle_unknown='ignore', sparse=False).fit(
+        one_hot_encoder = OneHotEncoder(handle_unknown='ignore', sparse=False).fit(
             X_train_categorical
         )
-        X_train_categorical_one_hot = oneHotEncoder.transform(X_train_categorical)
-        X_test_categorical_one_hot = oneHotEncoder.transform(X_test_categorical)
+        X_train_categorical_one_hot = one_hot_encoder.transform(X_train_categorical)
+        X_test_categorical_one_hot = one_hot_encoder.transform(X_test_categorical)
 
         X_train_numerical = X_train[['age', 'fare', 'family_size']]
         X_test_numerical = X_test[['age', 'fare', 'family_size']]
-        knnImputer = KNNImputer(n_neighbors=5).fit(X_train_numerical)
-        X_train_numerical_imputed = knnImputer.transform(X_train_numerical)
-        X_test_numerical_imputed = knnImputer.transform(X_test_numerical)
+        knn_imputer = KNNImputer(n_neighbors=5).fit(X_train_numerical)
+        X_train_numerical_imputed = knn_imputer.transform(X_train_numerical)
+        X_test_numerical_imputed = knn_imputer.transform(X_test_numerical)
 
-        robustScaler = RobustScaler().fit(X_train_numerical_imputed)
-        X_train_numerical_imputed_scaled = robustScaler.transform(
+        robust_scaler = RobustScaler().fit(X_train_numerical_imputed)
+        X_train_numerical_imputed_scaled = robust_scaler.transform(
             X_train_numerical_imputed
         )
-        X_test_numerical_imputed_scaled = robustScaler.transform(
+        X_test_numerical_imputed_scaled = robust_scaler.transform(
             X_test_numerical_imputed
         )
 
@@ -143,8 +143,8 @@ class TitanicModelCreator:
 
 
 def main(param: str = 'pass'):
-    titanicModelCreator = TitanicModelCreator()
-    titanicModelCreator.run()
+    titanic_model_creator = TitanicModelCreator()
+    titanic_model_creator.run()
 
 
 if __name__ == "__main__":

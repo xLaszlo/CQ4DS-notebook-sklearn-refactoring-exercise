@@ -10,8 +10,8 @@ class TitanicModelCreator:
 
 
 def main(param: str = 'pass'):
-    titanicModelCreator = TitanicModelCreator()
-    titanicModelCreator.run()
+    titanic_model_creator = TitanicModelCreator()
+    titanic_model_creator.run()
 
 
 if __name__ == "__main__":
