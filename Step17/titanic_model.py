@@ -59,7 +59,7 @@ def do_test(filename, data):
 def do_pandas_test(filename, data):
     if not os.path.isfile(filename):
         data.to_pickle(filename)
-    truth = pd.read_pickle(filename).reset_index(drop=True)
+    truth = pd.read_pickle(filename)
     try:
         pd.testing.assert_frame_equal(data, truth)
         print(f'{filename} pandas test passed')
