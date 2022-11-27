@@ -4,7 +4,6 @@ import typer
 import numpy as np
 import pandas as pd
 from pydantic import BaseModel
-from collections import Counter
 from sqlalchemy import create_engine
 
 from sklearn.model_selection import train_test_split
@@ -69,8 +68,8 @@ def do_pandas_test(filename, data):
 
 
 class SqlLoader:
-    def __init__(self, connectionString):
-        engine = create_engine(connectionString)
+    def __init__(self, connection_string):
+        engine = create_engine(connection_string)
         self.connection = engine.connect()
 
     def get_passengers(self):
@@ -97,11 +96,11 @@ class SqlLoader:
 
 
 class TestLoader:
-    def __init__(self, passengers_filename, realLoader):
+    def __init__(self, passengers_filename, real_loader):
         self.passengers_filename = passengers_filename
-        self.realLoader = realLoader
+        self.real_loader = real_loader
         if not os.path.isfile(self.passengers_filename):
-            df = self.realLoader.get_passengers()
+            df = self.real_loader.get_passengers()
             df.to_pickle(self.passengers_filename)
 
     def get_passengers(self):
@@ -164,9 +163,9 @@ class PassengerLoader:
 class TitanicModel:
     def __init__(self):
         self.trained = False
-        self.oneHotEncoder = OneHotEncoder(handle_unknown='ignore', sparse=False)
-        self.knnImputer = KNNImputer(n_neighbors=5)
-        self.robustScaler = RobustScaler()
+        self.one_hot_encoder = OneHotEncoder(handle_unknown='ignore', sparse=False)
+        self.knn_imputer = KNNImputer(n_neighbors=5)
+        self.robust_scaler = RobustScaler()
         self.predictor = LogisticRegression(random_state=0)
 
     def process_inputs(self, passengers):
@@ -174,14 +173,14 @@ class TitanicModel:
         categorical_data = data[['embarked', 'sex', 'pclass', 'title', 'is_alone']]
         numerical_data = data[['age', 'fare', 'family_size']]
         if self.trained:
-            categorical_data = self.oneHotEncoder.transform(categorical_data)
-            numerical_data = self.robustScaler.transform(
-                self.knnImputer.transform(numerical_data)
+            categorical_data = self.one_hot_encoder.transform(categorical_data)
+            numerical_data = self.robust_scaler.transform(
+                self.knn_imputer.transform(numerical_data)
             )
         else:
-            categorical_data = self.oneHotEncoder.fit_transform(categorical_data)
-            numerical_data = self.robustScaler.fit_transform(
-                self.knnImputer.fit_transform(numerical_data)
+            categorical_data = self.one_hot_encoder.fit_transform(categorical_data)
+            numerical_data = self.robust_scaler.fit_transform(
+                self.knn_imputer.fit_transform(numerical_data)
             )
         return np.hstack((categorical_data, numerical_data))
 
@@ -241,9 +240,9 @@ class TitanicModelCreator:
 
 
 def main(param: str = 'pass'):
-    titanicModelCreator = TitanicModelCreator(
+    titanic_model_creator = TitanicModelCreator(
         loader=PassengerLoader(
-            loader=SqlLoader(connectionString='sqlite:///../data/titanic.db'),
+            loader=SqlLoader(connection_string='sqlite:///../data/titanic.db'),
             rare_titles=RARE_TITLES,
         ),
         model_saver=ModelSaver(
@@ -251,21 +250,21 @@ def main(param: str = 'pass'):
             result_filename='../data/real_result.pkl',
         ),
     )
-    titanicModelCreator.run()
+    titanic_model_creator.run()
 
 
 def test_main(param: str = 'pass'):
-    titanicModelCreator = TitanicModelCreator(
+    titanic_model_creator = TitanicModelCreator(
         loader=PassengerLoader(
             loader=TestLoader(
                 passengers_filename='../data/passengers.pkl',
-                realLoader=SqlLoader(connectionString='sqlite:///../data/titanic.db'),
+                real_loader=SqlLoader(connection_string='sqlite:///../data/titanic.db'),
             ),
             rare_titles=RARE_TITLES,
         ),
         model_saver=TestModelSaver(),
     )
-    titanicModelCreator.run()
+    titanic_model_creator.run()
 
 
 if __name__ == "__main__":
