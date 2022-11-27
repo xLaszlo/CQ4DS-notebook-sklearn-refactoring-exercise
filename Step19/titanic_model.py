@@ -187,13 +187,17 @@ class TitanicModelCreator:
         passengers = self.loader.get_passengers()
         train_passengers, test_passengers = self.split_passengers(passengers)
 
+        y_train = [v.is_survived for v in train_passengers]
+        X_test = pd.DataFrame([v.dict() for v in test_passengers])
+        y_test = [v.is_survived for v in test_passengers]
+
         # --- TRAINING ---
         model = TitanicModel()
         model.train(train_passengers)
-        y_train_estimation = model.estimate(train_passengers)
-        cm_train = confusion_matrix(
-            [v.is_survived for v in train_passengers], y_train_estimation
-        )
+
+        X_train_processed = model.process_inputs(train_passengers)
+        y_train_estimation = model.predictor.predict(X_train_processed)
+        cm_train = confusion_matrix(y_train, y_train_estimation)
 
         # --- TESTING ---
         X_test_categorical = X_test[['embarked', 'sex', 'pclass', 'title', 'is_alone']]
@@ -217,14 +221,9 @@ class TitanicModelCreator:
 
         do_test('../data/cm_test.pkl', cm_test)
         do_test('../data/cm_train.pkl', cm_train)
-        X_train_processed = model.process_inputs(train_passengers)
         do_test('../data/X_train_processed.pkl', X_train_processed)
-        X_test_processed = model.process_inputs(test_passengers)
         do_test('../data/X_test_processed.pkl', X_test_processed)
 
-        do_pandas_test(
-            '../data/X_train.pkl', pd.DataFrame([v.dict() for v in train_passengers])
-        )
         do_pandas_test(
             '../data/df_no_tickets.pkl', pd.DataFrame([v.dict() for v in passengers])
         )
@@ -244,7 +243,7 @@ def test_main(param: str = 'pass'):
     titanic_model_creator = TitanicModelCreator(
         loader=PassengerLoader(
             loader=TestLoader(
-                passengers_filename='../data/passengers.pkl',
+                passengers_filename='../data/passengers_with_is_survived.pkl',
                 real_loader=SqlLoader(connection_string='sqlite:///../data/titanic.db'),
             ),
             rare_titles=RARE_TITLES,

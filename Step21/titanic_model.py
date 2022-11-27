@@ -128,8 +128,6 @@ class TestModelSaver:
         do_test('../data/X_train_processed.pkl', X_train_processed)
         X_test_processed = model.process_inputs(result['test_passengers'])
         do_test('../data/X_test_processed.pkl', X_test_processed)
-        X_train = pd.DataFrame([v.dict() for v in result['train_passengers']])
-        do_pandas_test('../data/X_train.pkl', X_train)
 
 
 class PassengerLoader:
@@ -257,7 +255,7 @@ def test_main(param: str = 'pass'):
     titanic_model_creator = TitanicModelCreator(
         loader=PassengerLoader(
             loader=TestLoader(
-                passengers_filename='../data/passengers.pkl',
+                passengers_filename='../data/passengers_with_is_survived.pkl',
                 real_loader=SqlLoader(connection_string='sqlite:///../data/titanic.db'),
             ),
             rare_titles=RARE_TITLES,

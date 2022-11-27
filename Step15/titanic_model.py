@@ -218,7 +218,7 @@ def test_main(param: str = 'pass'):
     titanic_model_creator = TitanicModelCreator(
         loader=PassengerLoader(
             loader=TestLoader(
-                passengers_filename='../data/passengers.pkl',
+                passengers_filename='../data/passengers_with_is_survived.pkl',
                 real_loader=SqlLoader(connection_string='sqlite:///../data/titanic.db'),
             ),
             rare_titles=RARE_TITLES,
