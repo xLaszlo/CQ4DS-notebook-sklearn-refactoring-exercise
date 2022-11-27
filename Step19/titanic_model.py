@@ -166,8 +166,7 @@ class TitanicModel:
         self.trained = True
 
     def estimate(self, passengers):
-        inputs = self.process_inputs(passengers)
-        return self.predictor.predict(inputs)
+        return 1
 
 
 class TitanicModelCreator:
@@ -197,10 +196,21 @@ class TitanicModelCreator:
         )
 
         # --- TESTING ---
-        y_test_estimation = model.estimate(test_passengers)
-        cm_test = confusion_matrix(
-            [v.is_survived for v in test_passengers], y_test_estimation
+        X_test_categorical = X_test[['embarked', 'sex', 'pclass', 'title', 'is_alone']]
+        X_test_categorical_one_hot = model.one_hot_encoder.transform(X_test_categorical)
+
+        X_test_numerical = X_test[['age', 'fare', 'family_size']]
+        X_test_numerical_imputed = model.knn_imputer.transform(X_test_numerical)
+        X_test_numerical_imputed_scaled = model.robust_scaler.transform(
+            X_test_numerical_imputed
         )
+
+        X_test_processed = np.hstack(
+            (X_test_categorical_one_hot, X_test_numerical_imputed_scaled)
+        )
+
+        y_test_estimation = model.predictor.predict(X_test_processed)
+        cm_test = confusion_matrix(y_test, y_test_estimation)
 
         print('cm_train', cm_train)
         print('cm_test', cm_test)
