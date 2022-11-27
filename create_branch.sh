@@ -25,6 +25,4 @@ else
     cp Step20/* Step19
     cp Step21/* Step20
     cp Step22/* Step21
-    cp Step23/* Step22
-    cp Step24/* Step23
 fi
