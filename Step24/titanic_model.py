@@ -44,7 +44,7 @@ class Passenger(BaseModel):
     is_alone: int
     title: str
     is_survived: int
-    
+
 
 def do_test(filename, data):
     if not os.path.isfile(filename):
@@ -76,7 +76,7 @@ class SqlLoader:
 
     def get_passengers(self):
         query = """
-            SELECT 
+            SELECT
                 tbl_passengers.pid,
                 tbl_passengers.pclass,
                 tbl_passengers.sex,
@@ -86,12 +86,12 @@ class SqlLoader:
                 tbl_passengers.fare,
                 tbl_passengers.embarked,
                 tbl_passengers.name,
-                tbl_targets.is_survived 
-            FROM 
-                tbl_passengers 
-            JOIN 
-                tbl_targets 
-            ON 
+                tbl_targets.is_survived
+            FROM
+                tbl_passengers
+            JOIN
+                tbl_targets
+            ON
                 tbl_passengers.pid=tbl_targets.pid
         """
         return pd.read_sql(query, con=self.connection)
@@ -145,7 +145,7 @@ class ModelSaver:
         self.result_filename = result_filename
 
     def save_model(self, model, result):
-        pickle.dump(model, open(self.filename, 'wb'))
+        pickle.dump(model, open(self.model_filename, 'wb'))
         pickle.dump(result, open(self.result_filename, 'wb'))
 
 
@@ -190,12 +190,12 @@ class TitanicModel:
 
     def train(self, passengers):
         targets = [passenger.is_survived for passenger in passengers]
-        inputs = self.process_inputs(passengers)     
+        inputs = self.process_inputs(passengers)
         self.predictor.fit(inputs, targets)
         self.trained = True
 
     def estimate(self, passengers):
-        inputs = self.process_inputs(passengers)     
+        inputs = self.process_inputs(passengers)
         return self.predictor.predict(inputs)
 
 
@@ -219,8 +219,8 @@ class TitanicModelCreator:
         train_pids, test_pids = self.get_train_pids(passengers)
         train_passengers = [passengers_map[pid] for pid in train_pids]
         test_passengers = [passengers_map[pid] for pid in test_pids]
-        
-        # --- TRAINING --- 
+
+        # --- TRAINING ---
         self.model.train(train_passengers)
 
         y_train_estimation = self.model.estimate(train_passengers)

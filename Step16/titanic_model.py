@@ -44,7 +44,7 @@ class Passenger(BaseModel):
     is_alone: int
     title: str
     is_survived: int
-    
+
 
 def do_test(filename, data):
     if not os.path.isfile(filename):
@@ -76,7 +76,7 @@ class SqlLoader:
 
     def get_passengers(self):
         query = """
-            SELECT 
+            SELECT
                 tbl_passengers.pid,
                 tbl_passengers.pclass,
                 tbl_passengers.sex,
@@ -86,12 +86,12 @@ class SqlLoader:
                 tbl_passengers.fare,
                 tbl_passengers.embarked,
                 tbl_passengers.name,
-                tbl_targets.is_survived 
-            FROM 
-                tbl_passengers 
-            JOIN 
-                tbl_targets 
-            ON 
+                tbl_targets.is_survived
+            FROM
+                tbl_passengers
+            JOIN
+                tbl_targets
+            ON
                 tbl_passengers.pid=tbl_targets.pid
         """
         return pd.read_sql(query, con=self.connection)
@@ -165,7 +165,7 @@ class TitanicModelCreator:
 
         X_train, X_test, y_train, y_test = train_test_split(df, targets, stratify=targets, test_size=0.2)
 
-        # --- TRAINING --- 
+        # --- TRAINING ---
         model = TitanicModel()
 
         X_train_categorical = X_train[['embarked', 'sex', 'pclass', 'title', 'is_alone']]
@@ -207,10 +207,10 @@ class TitanicModelCreator:
         do_test('../data/cm_train.pkl', cm_train)
         do_test('../data/X_train_processed.pkl', X_train_processed)
         do_test('../data/X_test_processed.pkl', X_test_processed)
-        
+
         do_pandas_test('../data/X_train.pkl', X_train)
         do_pandas_test('../data/df_no_tickets.pkl', df)
-        
+
 
 def main(param: str='pass'):
     titanicModelCreator = TitanicModelCreator(
