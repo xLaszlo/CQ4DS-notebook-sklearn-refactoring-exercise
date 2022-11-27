@@ -4,7 +4,6 @@ import typer
 import numpy as np
 import pandas as pd
 from pydantic import BaseModel
-from collections import Counter
 from sqlalchemy import create_engine
 
 from sklearn.model_selection import train_test_split

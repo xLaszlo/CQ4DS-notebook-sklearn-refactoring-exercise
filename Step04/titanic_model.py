@@ -1,5 +1,3 @@
-import os
-import pickle
 import typer
 import numpy as np
 import pandas as pd
