@@ -159,8 +159,11 @@ class TitanicModel:
             )
         return np.hstack((categorical_data, numerical_data))
 
-    def train(self):
-        pass
+    def train(self, passengers):
+        targets = [v.is_survived for v in passengers]
+        inputs = self.process_inputs(passengers)
+        self.predictor.fit(inputs, targets)
+        self.trained = True
 
     def estimate(self, passengers):
         return 1
@@ -190,11 +193,10 @@ class TitanicModelCreator:
 
         # --- TRAINING ---
         model = TitanicModel()
+        model.train(train_passengers)
 
         X_train_processed = model.process_inputs(train_passengers)
-        model.predictor.fit(X_train_processed, y_train)
         y_train_estimation = model.predictor.predict(X_train_processed)
-
         cm_train = confusion_matrix(y_train, y_train_estimation)
 
         # --- TESTING ---

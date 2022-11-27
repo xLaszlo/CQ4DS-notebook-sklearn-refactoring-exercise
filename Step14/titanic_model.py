@@ -148,44 +148,49 @@ class TitanicModelCreator:
             df, targets, stratify=targets, test_size=0.2
         )
 
+        # --- TRAINING ---
         X_train_categorical = X_train[
             ['embarked', 'sex', 'pclass', 'title', 'is_alone']
         ]
-        X_test_categorical = X_test[['embarked', 'sex', 'pclass', 'title', 'is_alone']]
 
         one_hot_encoder = OneHotEncoder(handle_unknown='ignore', sparse=False).fit(
             X_train_categorical
         )
         X_train_categorical_one_hot = one_hot_encoder.transform(X_train_categorical)
-        X_test_categorical_one_hot = one_hot_encoder.transform(X_test_categorical)
 
         X_train_numerical = X_train[['age', 'fare', 'family_size']]
-        X_test_numerical = X_test[['age', 'fare', 'family_size']]
         knn_imputer = KNNImputer(n_neighbors=5).fit(X_train_numerical)
         X_train_numerical_imputed = knn_imputer.transform(X_train_numerical)
-        X_test_numerical_imputed = knn_imputer.transform(X_test_numerical)
 
         robust_scaler = RobustScaler().fit(X_train_numerical_imputed)
         X_train_numerical_imputed_scaled = robust_scaler.transform(
             X_train_numerical_imputed
         )
-        X_test_numerical_imputed_scaled = robust_scaler.transform(
-            X_test_numerical_imputed
-        )
 
         X_train_processed = np.hstack(
             (X_train_categorical_one_hot, X_train_numerical_imputed_scaled)
         )
+
+        model = LogisticRegression(random_state=0).fit(X_train_processed, y_train)
+        y_train_estimation = model.predict(X_train_processed)
+
+        cm_train = confusion_matrix(y_train, y_train_estimation)
+
+        # --- TESTING ---
+        X_test_categorical = X_test[['embarked', 'sex', 'pclass', 'title', 'is_alone']]
+        X_test_categorical_one_hot = one_hot_encoder.transform(X_test_categorical)
+
+        X_test_numerical = X_test[['age', 'fare', 'family_size']]
+        X_test_numerical_imputed = knn_imputer.transform(X_test_numerical)
+        X_test_numerical_imputed_scaled = robust_scaler.transform(
+            X_test_numerical_imputed
+        )
+
         X_test_processed = np.hstack(
             (X_test_categorical_one_hot, X_test_numerical_imputed_scaled)
         )
 
-        model = LogisticRegression(random_state=0).fit(X_train_processed, y_train)
-        y_train_estimation = model.predict(X_train_processed)
         y_test_estimation = model.predict(X_test_processed)
-
-        cm_train = confusion_matrix(y_train, y_train_estimation)
-
         cm_test = confusion_matrix(y_test, y_test_estimation)
 
         print('cm_train', cm_train)
