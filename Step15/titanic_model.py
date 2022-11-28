@@ -215,7 +215,7 @@ class TitanicModelCreator:
         do_test('../data/X_train_processed.pkl', X_train_processed)
         do_test('../data/X_test_processed.pkl', X_test_processed)
 
-        ('../data/df_no_tickets.pkl', df)
+        do_pandas_test('../data/df_no_tickets.pkl', df)
 
 
 def main(param: str = 'pass'):
