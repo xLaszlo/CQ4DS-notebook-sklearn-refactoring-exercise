@@ -3,7 +3,7 @@
 - Create `ModelSaver` that has a `save_model` interface that accepts a model and a result object
 - Pickle the model and the result to a file
 - Create `TestModelSaver` that has the same interface
-- Move the testing code to the `save_model` functon
+- Move the testing code to the `save_model` function
 - Add `model_saver` property to `TitanicModelCreator` and call it after the evaluation code
 - Add an instance of `ModelSaver` and `TestModelSaver` respectively in `main` and `test_main` to the construction of `TitanicModelCreator`
 
